@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>职场生存战</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar panel">
+      <div>
+        <p class="eyebrow">Retro Office Merge</p>
+        <h1>职场生存战</h1>
+      </div>
+      <div class="resource-strip">
+        <div class="resource-card">
+          <span>决策点</span>
+          <strong id="decisionPoints">0</strong>
+        </div>
+        <div class="resource-card">
+          <span>公司资金</span>
+          <strong id="companyFunds">0</strong>
+        </div>
+        <div class="resource-card">
+          <span>Token</span>
+          <strong id="tokenCount">0</strong>
+        </div>
+        <div class="resource-card">
+          <span>KPI</span>
+          <strong id="kpiCount">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <section class="center-column">
+        <section class="board-section panel">
+          <div class="panel-title-row">
+            <h2>办公棋盘</h2>
+            <p class="hint">点击人才库可直接招募，再次点击同一个人才库也会继续招募；同类同级资产可合成。</p>
+          </div>
+          <div id="board" class="board" aria-label="人才棋盘"></div>
+          <div id="bubbleLayer" class="bubble-layer"></div>
+        </section>
+      </section>
+
+      <aside class="right-column">
+        <section class="panel task-panel">
+          <div class="panel-title-row">
+            <h2>任务单</h2>
+          </div>
+          <p id="taskSubtitle" class="eyebrow"></p>
+          <p id="taskDescription" class="task-text task-description"></p>
+          <div class="task-meta">
+            <span id="taskTarget"></span>
+            <span id="taskReward"></span>
+          </div>
+          <button id="submitTaskButton" class="primary-button">提交需求</button>
+        </section>
+
+        <section class="panel pool-panel" id="stashPanel">
+          <div class="panel-title-row">
+            <h2>暂存区</h2>
+            <span id="stashCountLabel">0 个</span>
+          </div>
+          <div id="stashList" class="stash-list"></div>
+          <p class="small-text">先在商店采购人才库，再把它拖进棋盘空格里。</p>
+        </section>
+
+        <section class="panel pool-panel hidden" id="poolStorePanel" aria-hidden="true">
+          <div class="panel-title-row">
+            <h2>人才库采购</h2>
+            <span>第二阶段</span>
+          </div>
+          <div id="poolStoreList" class="shop-list"></div>
+          <p class="small-text">第二阶段开启后，不同职能的人才库会在这里单独采购。</p>
+        </section>
+
+        <section class="panel shop-panel">
+          <div class="panel-title-row">
+            <h2>技能商店</h2>
+            <span>消耗资源</span>
+          </div>
+          <div id="shopList" class="shop-list"></div>
+        </section>
+
+        <section class="panel log-panel">
+          <div class="panel-title-row">
+            <h2>工作日志</h2>
+            <button id="clearLogButton" class="secondary-button">清空</button>
+          </div>
+          <div id="eventLog" class="event-log"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <template id="shopItemTemplate">
+    <button class="shop-item">
+      <span class="shop-title"></span>
+      <span class="shop-cost"></span>
+      <small class="shop-desc"></small>
+    </button>
+  </template>
+
+  <div id="failureModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel">
+      <p class="eyebrow">Termination Notice</p>
+      <h2>你被开除了</h2>
+      <p class="task-text">决策点已经耗尽，但任务还没完成。本轮职场生存失败，点击下方按钮重新入职。</p>
+      <button id="restartGameButton" class="primary-button">重新入职</button>
+    </div>
+  </div>
+
+  <div id="introModal" class="modal-backdrop" aria-hidden="false">
+    <div class="modal panel">
+      <p class="eyebrow">New Assignment</p>
+      <h2>欢迎入职</h2>
+      <p class="task-text">你是公司的“人力管理”。神秘高层不会告诉你原因，只会不断甩下需求单。你的工作很简单：在有限决策点内，组织人才、完成提交。</p>
+      <button id="startGameButton" class="primary-button">开始游戏</button>
+    </div>
+  </div>
+
+  <div id="specializationModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel">
+      <p class="eyebrow">Phase Two</p>
+      <h2>职能系统已开启</h2>
+      <p class="task-text">公司规模扩大了。现在人才会带有职能属性，例如设计实习生、技术应届生。之后只有同职能、同等级的人才才能合成，棋盘上的旧人才也已被重新分配职能。</p>
+      <button id="closeSpecializationButton" class="primary-button">继续工作</button>
+    </div>
+  </div>
+
+  <div id="skillWorkerModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel">
+      <p class="eyebrow">Skill Exchange</p>
+      <h2>员工.Skill</h2>
+      <p id="skillWorkerModalText" class="task-text"></p>
+      <button id="confirmSkillWorkerButton" class="primary-button">确认兑换</button>
+      <button id="cancelSkillWorkerButton" class="secondary-button">取消</button>
+    </div>
+  </div>
+
+  <div id="transferModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel">
+      <p class="eyebrow">Transfer</p>
+      <h2>员工转岗</h2>
+      <p id="transferModalText" class="task-text"></p>
+      <div id="transferOptions" class="shop-list"></div>
+      <button id="cancelTransferButton" class="secondary-button">取消</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
