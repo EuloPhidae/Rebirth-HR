@@ -17,9 +17,9 @@ const DEPARTMENTS = ["技术部", "设计部", "运营部", "行政部"];
 const TALENT_META = {
   1: { name: "实习生", icon: "☕", colorClass: "rarity-1" },
   2: { name: "应届生", icon: "📘", colorClass: "rarity-2" },
-  3: { name: "高级人才", icon: "💡", colorClass: "rarity-3" },
-  4: { name: "资深人才", icon: "🧠", colorClass: "rarity-4" },
-  5: { name: "主管", icon: "👔", colorClass: "rarity-5" }
+  3: { name: "高级员工", icon: "💡", colorClass: "rarity-3" },
+  4: { name: "资深员工", icon: "🧠", colorClass: "rarity-4" },
+  5: { name: "专家员工", icon: "👔", colorClass: "rarity-5" }
 };
 
 const ENTITY_META = {
@@ -39,11 +39,11 @@ const ENTITY_META = {
     5: { name: "员工.Skill", icon: "✦", colorClass: "rarity-5" }
   },
   lockedTalent: {
-    1: { name: "封锁人才", icon: "🔒", colorClass: "entity-locked" },
-    2: { name: "封锁人才", icon: "🔒", colorClass: "entity-locked" },
-    3: { name: "封锁人才", icon: "🔒", colorClass: "entity-locked" },
-    4: { name: "封锁人才", icon: "🔒", colorClass: "entity-locked" },
-    5: { name: "封锁人才", icon: "🔒", colorClass: "entity-locked" }
+    1: { name: "积灰人才", icon: "🔒", colorClass: "entity-locked" },
+    2: { name: "积灰人才", icon: "🔒", colorClass: "entity-locked" },
+    3: { name: "积灰人才", icon: "🔒", colorClass: "entity-locked" },
+    4: { name: "积灰人才", icon: "🔒", colorClass: "entity-locked" },
+    5: { name: "积灰人才", icon: "🔒", colorClass: "entity-locked" }
   }
 };
 
@@ -76,7 +76,7 @@ const TUTORIAL_TASKS = [
     id: "tutorial-3",
     decisionPoints: 2,
     title: "入职培训 3",
-    description: "再点击两次人才库，获得两名实习生。将它们合成为 1 名应届生后提交。",
+    description: "再点击两次人才库，获得两名实习生。别问为什么是合成，这就是设定。将他们合成为 1 名应届生后提交。",
     rewardText: "奖励：学会合成晋升",
     objective: { type: "talent_level_count", level: 2, count: 1 }
   },
@@ -84,7 +84,7 @@ const TUTORIAL_TASKS = [
     id: "tutorial-4",
     decisionPoints: 1,
     title: "入职培训 4",
-    description: "把一个可活动的实习生拖到被封锁的实习生上，完成解锁并合成后提交。",
+    description: "把一个可活动的实习生拖到被积灰的实习生上，完成解锁并合成后提交。",
     rewardText: "奖励：学会解锁格子",
     objective: { type: "unlock_count", count: 1 }
   },
@@ -92,7 +92,7 @@ const TUTORIAL_TASKS = [
     id: "tutorial-5",
     decisionPoints: 1,
     title: "入职培训 5",
-    description: "任选一名员工执行一次蒸馏，获得对应等级的 Token，然后提交。",
+    description: "任选一名员工执行一次裁员，并蒸馏他的工作成果，获得对应等级的 Token，然后提交任务。",
     rewardText: "奖励：学会资源回收",
     objective: { type: "distill_count", count: 1 }
   }
@@ -413,7 +413,7 @@ function getEntityVisualMeta(entity) {
   if (entity.type === "lockedTalent") {
     return {
       ...ENTITY_META.lockedTalent[entity.level],
-      name: `封锁${getTalentDisplayName(entity.level, entity.role)}`,
+      name: `积灰${getTalentDisplayName(entity.level, entity.role)}`,
       icon: TALENT_META[entity.level].icon
     };
   }
@@ -542,7 +542,7 @@ function unlockSpecializationSystem() {
   state.specializationUnlocked = true;
   assignRolesToExistingBoardTalents();
   convertExistingPoolsToAdminPools();
-  addLog("公司扩张完成，职能系统已开启。之后只有同职能、同等级的人才才能合成，任务单也会开始指定职能。");
+  addLog("公司扩张完成，职能系统已开启。之后只有同职能、同等级的员工才能合成，任务单也会开始指定职能。");
   showSpecializationModal(true);
 }
 
@@ -749,9 +749,9 @@ const SHOP_ITEMS = [
   },
   {
     id: "distill",
-    name: "蒸馏",
+    name: "裁员并蒸馏",
     costLabel: "选择员工",
-    description: "把当前选中的员工蒸馏成 Token。",
+    description: "把当前选中的员工扔回人才库。把他的工作成果蒸馏成 Token。",
     isDisabled: () => !isSelectedTalent() || state.isGameOver,
     use: () => {
       if (!isSelectedTalent()) {
@@ -908,11 +908,11 @@ function unlockLockedCell(fromIndex, toIndex) {
     return false;
   }
   if (source.level !== target.level || source.level >= MAX_LEVEL) {
-    addLog("封锁格只接受同等级人才来解锁。", "warning");
+    addLog("积灰格只接受同等级人才来解锁。", "warning");
     return false;
   }
   if (state.specializationUnlocked && source.role !== target.role) {
-    addLog("封锁格在第二阶段也需要同职能人才来解锁。", "warning");
+    addLog("积灰格在第二阶段也需要同职能人才来解锁。", "warning");
     return false;
   }
 
@@ -922,7 +922,7 @@ function unlockLockedCell(fromIndex, toIndex) {
   state.grid[toIndex] = createEntity("talent", nextLevel, extra);
   state.totalUnlockedCells += 1;
   state.selectedCell = toIndex;
-  addLog(`封锁格已解锁，并合成出 ${getTalentDisplayName(nextLevel, source.role)}。`);
+  addLog(`积灰格已解锁，并合成出 ${getTalentDisplayName(nextLevel, source.role)}。`);
   render();
   animateCell(toIndex);
   maybeSpawnBubble(nextLevel);
@@ -1005,7 +1005,7 @@ function handleCellClick(index) {
   }
 
   if (isLockedTalent(entity)) {
-    addLog(`这里是 ${getEntityVisualMeta(entity).name}，需要拖入同等级人才来解锁。`);
+    addLog(`这里是 ${getEntityVisualMeta(entity).name}，需要拖入同等级员工来解锁。`);
     return;
   }
 
@@ -1281,7 +1281,7 @@ function restartGame() {
   showSpecializationModal(false);
   closeSkillWorkerModal();
   closeTransferModal();
-  addLog("重新入职成功。新的培训任务已经发到你的桌上。");
+  addLog("你重生了，这一世你再次入职成功。新的培训任务已经发到你的桌上。");
   render();
 }
 
