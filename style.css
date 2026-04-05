@@ -195,6 +195,7 @@ h2 {
   align-items: center;
   justify-content: center;
   transition: transform 120ms ease, border-color 120ms ease;
+  touch-action: manipulation;
 }
 
 .cell.empty::after {
@@ -221,6 +222,16 @@ h2 {
   text-align: center;
   user-select: none;
   overflow: hidden;
+}
+
+.js-draggable {
+  touch-action: none;
+}
+
+.is-dragging {
+  opacity: 0.92;
+  z-index: 30;
+  box-shadow: 14px 14px 0 rgba(0, 0, 0, 0.28);
 }
 
 .entity-pool {
@@ -352,6 +363,11 @@ h2 {
   text-align: left;
 }
 
+.stash-item.is-dragging,
+.talent-card.is-dragging {
+  transform: rotate(-2deg) scale(1.04);
+}
+
 .stash-pending {
   animation: stash-pulse 1.6s steps(4, end) infinite;
 }
@@ -430,6 +446,7 @@ h2 {
 
 .modal {
   width: min(480px, 100%);
+  transform-origin: center;
 }
 
 .hidden {

@@ -10,6 +10,10 @@ const SKILL_WORKER_EXCHANGE_TOKEN = 6;
 const KPI_TO_ACTION_COST = 10;
 const SPECIALIZATION_UNLOCK_AFTER_TASKS = 5;
 const TRANSFER_COST = 1;
+const gsapApi = window.gsap ?? null;
+const interactApi = window.interact ?? null;
+const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+let enhancedInteractionsBound = false;
 
 const JOB_FUNCTIONS = ["技术", "设计", "运营", "行政"];
 const DEPARTMENTS = ["技术部", "设计部", "运营部", "行政部"];
@@ -295,11 +299,17 @@ function clearSelection() {
 function showFailureModal(visible) {
   failureModalEl.classList.toggle("hidden", !visible);
   failureModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(failureModalEl);
+  }
 }
 
 function showSpecializationModal(visible) {
   specializationModalEl.classList.toggle("hidden", !visible);
   specializationModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(specializationModalEl);
+  }
 }
 
 function openSkillWorkerModal(index) {
@@ -314,6 +324,7 @@ function openSkillWorkerModal(index) {
   state.pendingSkillWorkerIndex = index;
   skillWorkerModalEl.classList.remove("hidden");
   skillWorkerModalEl.setAttribute("aria-hidden", "false");
+  animateModalEntrance(skillWorkerModalEl);
 }
 
 function closeSkillWorkerModal() {
@@ -351,6 +362,7 @@ function openTransferModal(index) {
 
   transferModalEl.classList.remove("hidden");
   transferModalEl.setAttribute("aria-hidden", "false");
+  animateModalEntrance(transferModalEl);
 }
 
 function closeTransferModal() {
@@ -366,9 +378,109 @@ function animateCell(index, className = "merge-pop") {
     if (!cell) {
       return;
     }
+    const card = cell.querySelector(".talent-card");
+    if (card && animateWithGsap(card, { scale: 0.82, y: 8 }, {
+      scale: 1,
+      y: 0,
+      duration: 0.24,
+      ease: "back.out(1.5)",
+      clearProps: "transform"
+    })) {
+      return;
+    }
     cell.classList.remove(className);
     void cell.offsetWidth;
     cell.classList.add(className);
+  });
+}
+
+function animateWithGsap(target, fromVars, toVars) {
+  if (!gsapApi || prefersReducedMotion || !target) {
+    return false;
+  }
+  gsapApi.killTweensOf(target);
+  gsapApi.fromTo(target, fromVars, toVars);
+  return true;
+}
+
+function animateModalEntrance(modalEl) {
+  if (!modalEl || modalEl.classList.contains("hidden")) {
+    return;
+  }
+  const panel = modalEl.querySelector(".modal");
+  animateWithGsap(modalEl, { opacity: 0 }, { opacity: 1, duration: 0.18, ease: "power2.out" });
+  animateWithGsap(panel, {
+    opacity: 0,
+    y: 24,
+    scale: 0.94
+  }, {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    duration: 0.24,
+    ease: "back.out(1.4)",
+    clearProps: "transform,opacity"
+  });
+}
+
+function getEventClientPoint(event) {
+  const sourceEvent = event?.relatedEvent ?? event;
+  const clientX = sourceEvent?.clientX ?? sourceEvent?.pageX;
+  const clientY = sourceEvent?.clientY ?? sourceEvent?.pageY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY)
+    ? { x: clientX, y: clientY }
+    : null;
+}
+
+function getDropCellIndexFromPoint(point, draggedEl) {
+  if (!point) {
+    return null;
+  }
+  const previousPointerEvents = draggedEl.style.pointerEvents;
+  draggedEl.style.pointerEvents = "none";
+  const hitCell = document.elementFromPoint(point.x, point.y)?.closest(".cell");
+  draggedEl.style.pointerEvents = previousPointerEvents;
+  if (!hitCell) {
+    return null;
+  }
+  return Number(hitCell.dataset.index);
+}
+
+function initializeEnhancedInteractions() {
+  if (!interactApi || enhancedInteractionsBound) {
+    return;
+  }
+
+  enhancedInteractionsBound = true;
+  interactApi(".js-draggable").draggable({
+    listeners: {
+      start(event) {
+        event.target.dataset.dragX = "0";
+        event.target.dataset.dragY = "0";
+        event.target.classList.add("is-dragging");
+      },
+      move(event) {
+        const x = (Number(event.target.dataset.dragX) || 0) + event.dx;
+        const y = (Number(event.target.dataset.dragY) || 0) + event.dy;
+        event.target.dataset.dragX = String(x);
+        event.target.dataset.dragY = String(y);
+        event.target.style.transform = `translate(${x}px, ${y}px)`;
+      },
+      end(event) {
+        const target = event.target;
+        const dropIndex = getDropCellIndexFromPoint(getEventClientPoint(event), target);
+        target.classList.remove("is-dragging");
+        target.style.transform = "";
+        target.dataset.dragX = "0";
+        target.dataset.dragY = "0";
+
+        if (dropIndex === null) {
+          return;
+        }
+
+        handleBoardDrop(target.dataset.transfer, dropIndex);
+      }
+    }
   });
 }
 
@@ -579,9 +691,6 @@ function playWinSound() {
 function submitCurrentTask() {
   if (!isTaskComplete()) {
     addLog("当前任务还没有达标，暂时不能提交。", "warning");
-    if (state.decisionPoints <= 0) {
-      triggerGameOver();
-    }
     return;
   }
 
@@ -851,10 +960,6 @@ function recruitFromSelectedPool() {
   render();
   animateCell(selectedPool.index);
   animateCell(spawnIndex);
-
-  if (state.decisionPoints <= 0 && !isTaskComplete()) {
-    triggerGameOver();
-  }
 }
 
 function canMergeEntities(source, target) {
@@ -946,7 +1051,8 @@ function maybeSpawnBubble(level) {
     cost: level * 3,
     secondsLeft: 10,
     left: 8 + Math.random() * 78,
-    top: 10 + Math.random() * 68
+    top: 10 + Math.random() * 68,
+    hasAnimated: false
   });
   renderBubbles();
 }
@@ -1119,9 +1225,13 @@ function renderBoard() {
     if (entity) {
       const meta = getEntityVisualMeta(entity);
       const card = document.createElement("div");
-      card.className = `talent-card ${meta.colorClass} ${entity.type === "skillWorker" ? "skill-worker-card" : ""}`;
-      card.draggable = entity.type !== "lockedTalent";
-      if (entity.type !== "lockedTalent") {
+      const isMovable = entity.type !== "lockedTalent";
+      card.className = `talent-card ${meta.colorClass} ${entity.type === "skillWorker" ? "skill-worker-card" : ""} ${isMovable && interactApi ? "js-draggable" : ""}`;
+      card.draggable = isMovable && !interactApi;
+      if (isMovable) {
+        card.dataset.transfer = `cell:${index}`;
+      }
+      if (isMovable && !interactApi) {
         card.addEventListener("dragstart", (event) => {
           event.dataTransfer.setData("text/plain", `cell:${index}`);
         });
@@ -1167,12 +1277,15 @@ function renderStash() {
   state.stash.forEach((entity) => {
     const meta = getEntityVisualMeta(entity);
     const item = document.createElement("button");
-    item.className = "stash-item";
-    item.draggable = true;
+    item.className = `stash-item ${interactApi ? "js-draggable" : ""}`;
+    item.draggable = !interactApi;
+    item.dataset.transfer = `stash:${entity.id}`;
     item.textContent = `${meta.icon} ${meta.name} Lv.${entity.level}`;
-    item.addEventListener("dragstart", (event) => {
-      event.dataTransfer.setData("text/plain", `stash:${entity.id}`);
-    });
+    if (!interactApi) {
+      item.addEventListener("dragstart", (event) => {
+        event.dataTransfer.setData("text/plain", `stash:${entity.id}`);
+      });
+    }
     stashListEl.append(item);
   });
 }
@@ -1243,6 +1356,21 @@ function renderBubbles() {
     `;
     el.addEventListener("click", () => purchaseBubble(bubble.id));
     bubbleLayerEl.append(el);
+    if (!bubble.hasAnimated) {
+      animateWithGsap(el, {
+        opacity: 0,
+        y: 16,
+        scale: 0.9
+      }, {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.22,
+        ease: "back.out(1.3)",
+        clearProps: "transform,opacity"
+      });
+      bubble.hasAnimated = true;
+    }
   });
 }
 
@@ -1285,5 +1413,6 @@ function restartGame() {
   render();
 }
 
+initializeEnhancedInteractions();
 restartGame();
 window.setInterval(tickBubbles, 1000);
