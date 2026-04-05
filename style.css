@@ -49,11 +49,59 @@ button {
 }
 
 .topbar {
+  margin-bottom: 20px;
+}
+
+.topbar-main {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 16px;
+  align-items: center;
+}
+
+.topbar-left {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 16px;
-  margin-bottom: 20px;
+}
+
+.title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar-main h1 {
+  margin: 0;
+}
+
+.shop-toggle-button {
+  margin-left: auto;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.shop-toggle-button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
+}
+
+.shop-toggle-button:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.resource-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-self: end;
 }
 
 .eyebrow {
@@ -78,27 +126,21 @@ h2 {
   font-size: 18px;
 }
 
-.resource-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
 .resource-card {
-  min-width: 100px;
-  padding: 10px 12px;
-  border: 3px solid #111;
+  min-width: 70px;
+  padding: 4px 8px;
+  border: 2px solid #111;
   background: #181726;
 }
 
 .resource-card span {
   display: block;
-  font-size: 12px;
+  font-size: 10px;
   color: var(--muted);
 }
 
 .resource-card strong {
-  font-size: 24px;
+  font-size: 18px;
   color: var(--mint);
 }
 
@@ -113,6 +155,27 @@ h2 {
 .center-column {
   display: grid;
   gap: 20px;
+}
+
+.top-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.top-row #stashPanel {
+  min-width: 140px;
+  max-width: 180px;
+}
+
+.top-row #stashPanel .stash-list {
+  min-height: 60px;
+}
+
+.top-row #stashPanel .stash-item {
+  padding: 8px 10px;
+  font-size: 13px;
 }
 
 .panel-title-row {
@@ -332,21 +395,6 @@ h2 {
   100% { transform: scale(1); }
 }
 
-.event-log {
-  display: grid;
-  gap: 10px;
-  max-height: 280px;
-  overflow: auto;
-}
-
-.log-entry {
-  padding: 8px 10px;
-  background: rgba(0, 0, 0, 0.2);
-  border-left: 4px solid var(--accent);
-  line-height: 1.4;
-  font-size: 13px;
-}
-
 .pool-buttons,
 .shop-list,
 .stash-list {
@@ -449,6 +497,19 @@ h2 {
   transform-origin: center;
 }
 
+.shop-modal {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.shop-modal .shop-list {
+  display: grid;
+  gap: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
 .hidden {
   display: none !important;
 }
@@ -456,5 +517,32 @@ h2 {
 @media (max-width: 1160px) {
   .game-layout {
     grid-template-columns: 1fr;
+  }
+  
+  .topbar-main {
+    grid-template-columns: 1fr;
+  }
+  
+  .resource-strip {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 600px) {
+  .top-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .top-row #stashPanel {
+    max-width: none;
+  }
+  
+  .topbar-left {
+    flex-wrap: wrap;
+  }
+  
+  .shop-toggle-button {
+    font-size: 12px;
+    padding: 6px 12px;
   }
 }

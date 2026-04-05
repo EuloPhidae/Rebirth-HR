@@ -8,33 +8,61 @@
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar panel">
-      <div>
-        <p class="eyebrow">Retro Office Merge</p>
-        <h1>职场生存战</h1>
-      </div>
-      <div class="resource-strip">
-        <div class="resource-card">
-          <span>决策点</span>
-          <strong id="decisionPoints">0</strong>
+    <header class="topbar">
+      <div class="topbar-main panel">
+        <div class="topbar-left">
+          <div class="title-group">
+            <p class="eyebrow">Retro Office Merge</p>
+            <h1>职场生存战</h1>
+          </div>
+          <button id="openShopButton" class="shop-toggle-button">🛒 技能商店</button>
         </div>
-        <div class="resource-card">
-          <span>公司资金</span>
-          <strong id="companyFunds">0</strong>
-        </div>
-        <div class="resource-card">
-          <span>Token</span>
-          <strong id="tokenCount">0</strong>
-        </div>
-        <div class="resource-card">
-          <span>KPI</span>
-          <strong id="kpiCount">0</strong>
+        <div class="resource-strip">
+          <div class="resource-card">
+            <span>决策点</span>
+            <strong id="decisionPoints">0</strong>
+          </div>
+          <div class="resource-card">
+            <span>公司资金</span>
+            <strong id="companyFunds">0</strong>
+          </div>
+          <div class="resource-card">
+            <span>Token</span>
+            <strong id="tokenCount">0</strong>
+          </div>
+          <div class="resource-card">
+            <span>KPI</span>
+            <strong id="kpiCount">0</strong>
+          </div>
         </div>
       </div>
     </header>
 
     <main class="game-layout">
       <section class="center-column">
+        <div class="top-row">
+          <section class="panel pool-panel" id="stashPanel">
+            <div class="panel-title-row">
+              <h2>暂存区</h2>
+              <span id="stashCountLabel">0 个</span>
+            </div>
+            <div id="stashList" class="stash-list"></div>
+          </section>
+
+          <section class="panel task-panel">
+            <div class="panel-title-row">
+              <h2>任务单</h2>
+            </div>
+            <p id="taskSubtitle" class="eyebrow"></p>
+            <p id="taskDescription" class="task-text task-description"></p>
+            <div class="task-meta">
+              <span id="taskTarget"></span>
+              <span id="taskReward"></span>
+            </div>
+            <button id="submitTaskButton" class="primary-button">提交需求</button>
+          </section>
+        </div>
+
         <section class="board-section panel">
           <div class="panel-title-row">
             <h2>办公棋盘</h2>
@@ -46,28 +74,6 @@
       </section>
 
       <aside class="right-column">
-        <section class="panel task-panel">
-          <div class="panel-title-row">
-            <h2>任务单</h2>
-          </div>
-          <p id="taskSubtitle" class="eyebrow"></p>
-          <p id="taskDescription" class="task-text task-description"></p>
-          <div class="task-meta">
-            <span id="taskTarget"></span>
-            <span id="taskReward"></span>
-          </div>
-          <button id="submitTaskButton" class="primary-button">提交需求</button>
-        </section>
-
-        <section class="panel pool-panel" id="stashPanel">
-          <div class="panel-title-row">
-            <h2>暂存区</h2>
-            <span id="stashCountLabel">0 个</span>
-          </div>
-          <div id="stashList" class="stash-list"></div>
-          <p class="small-text">先在商店采购人才库，再把它拖进棋盘空格里。</p>
-        </section>
-
         <section class="panel pool-panel hidden" id="poolStorePanel" aria-hidden="true">
           <div class="panel-title-row">
             <h2>人才库采购</h2>
@@ -76,24 +82,18 @@
           <div id="poolStoreList" class="shop-list"></div>
           <p class="small-text">第二阶段开启后，不同职能的人才库会在这里单独采购。</p>
         </section>
-
-        <section class="panel shop-panel">
-          <div class="panel-title-row">
-            <h2>技能商店</h2>
-            <span>消耗资源</span>
-          </div>
-          <div id="shopList" class="shop-list"></div>
-        </section>
-
-        <section class="panel log-panel">
-          <div class="panel-title-row">
-            <h2>工作日志</h2>
-            <button id="clearLogButton" class="secondary-button">清空</button>
-          </div>
-          <div id="eventLog" class="event-log"></div>
-        </section>
       </aside>
     </main>
+  </div>
+
+  <div id="shopModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel shop-modal">
+      <div class="panel-title-row">
+        <h2>🛒 技能商店</h2>
+        <button id="closeShopButton" class="secondary-button">关闭</button>
+      </div>
+      <div id="shopList" class="shop-list"></div>
+    </div>
   </div>
 
   <template id="shopItemTemplate">
@@ -126,7 +126,7 @@
     <div class="modal panel">
       <p class="eyebrow">Phase Two</p>
       <h2>职能系统已开启</h2>
-      <p class="task-text">公司规模扩大了。现在人才会带有职能属性，例如设计实习生、技术应届生。之后只有同职能、同等级的人才才能合成，棋盘上的旧人才也已被重新分配职能。</p>
+      <p class="task-text">公司规模扩大了。现在人才会带有职能属性，例如运营实习生、行政应届生。之后只有同职能、同等级的人才才能合成，棋盘上的旧人才也已被重新分配职能。</p>
       <button id="closeSpecializationButton" class="primary-button">继续工作</button>
     </div>
   </div>

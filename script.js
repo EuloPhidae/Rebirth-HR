@@ -15,8 +15,8 @@ const interactApi = window.interact ?? null;
 const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 let enhancedInteractionsBound = false;
 
-const JOB_FUNCTIONS = ["技术", "设计", "运营", "行政"];
-const DEPARTMENTS = ["技术部", "设计部", "运营部", "行政部"];
+const JOB_FUNCTIONS = ["运营", "行政"];
+const DEPARTMENTS = ["运营部", "行政部"];
 
 const TALENT_META = {
   1: { name: "实习生", icon: "☕", colorClass: "rarity-1" },
@@ -24,6 +24,11 @@ const TALENT_META = {
   3: { name: "高级员工", icon: "💡", colorClass: "rarity-3" },
   4: { name: "资深员工", icon: "🧠", colorClass: "rarity-4" },
   5: { name: "专家员工", icon: "👔", colorClass: "rarity-5" }
+};
+
+const ROLE_ICONS = {
+  "运营": "📊",
+  "行政": "📋"
 };
 
 const ENTITY_META = {
@@ -64,7 +69,7 @@ const TUTORIAL_TASKS = [
     id: "tutorial-1",
     decisionPoints: 1,
     title: "入职培训 1",
-    description: "使用 1 点决策点和 1 点公司资金，采购一个 1 级人才库，并把它拖进棋盘空格中后提交。",
+    description: "使用 1 点决策点和 1 点公司资金，采购一个 📦人才库，并把它拖进棋盘空格中后提交。",
     rewardText: "奖励：正式获得招聘权限",
     objective: { type: "board_pool_count", count: 1 }
   },
@@ -72,7 +77,7 @@ const TUTORIAL_TASKS = [
     id: "tutorial-2",
     decisionPoints: 1,
     title: "入职培训 2",
-    description: "点击棋盘中的人才库，消耗 1 点决策点招聘 1 名实习生，然后提交。",
+    description: "点击棋盘中的人才库，消耗 1 点决策点招聘 1 名☕实习生，然后提交。",
     rewardText: "奖励：学会基础招聘",
     objective: { type: "talent_level_count", level: 1, count: 1 }
   },
@@ -80,7 +85,7 @@ const TUTORIAL_TASKS = [
     id: "tutorial-3",
     decisionPoints: 2,
     title: "入职培训 3",
-    description: "再点击两次人才库，获得两名实习生。别问为什么是合成，这就是设定。将他们合成为 1 名应届生后提交。",
+    description: "再点击两次人才库，获得两名☕实习生。别问为什么是合成，这就是设定。将他们合成为 1 名📘应届生后提交。",
     rewardText: "奖励：学会合成晋升",
     objective: { type: "talent_level_count", level: 2, count: 1 }
   },
@@ -88,7 +93,7 @@ const TUTORIAL_TASKS = [
     id: "tutorial-4",
     decisionPoints: 1,
     title: "入职培训 4",
-    description: "把一个可活动的实习生拖到被积灰的实习生上，完成解锁并合成后提交。",
+    description: "把一个可活动的☕实习生拖到被积灰的☕实习生上，完成解锁并合成后提交。",
     rewardText: "奖励：学会解锁格子",
     objective: { type: "unlock_count", count: 1 }
   },
@@ -132,7 +137,6 @@ const state = {
 
 const boardEl = document.querySelector("#board");
 const bubbleLayerEl = document.querySelector("#bubbleLayer");
-const eventLogEl = document.querySelector("#eventLog");
 const decisionPointsEl = document.querySelector("#decisionPoints");
 const companyFundsEl = document.querySelector("#companyFunds");
 const tokenCountEl = document.querySelector("#tokenCount");
@@ -162,12 +166,10 @@ const transferModalEl = document.querySelector("#transferModal");
 const transferModalTextEl = document.querySelector("#transferModalText");
 const transferOptionsEl = document.querySelector("#transferOptions");
 const cancelTransferButtonEl = document.querySelector("#cancelTransferButton");
-const clearLogButtonEl = document.querySelector("#clearLogButton");
+const shopModalEl = document.querySelector("#shopModal");
+const openShopButtonEl = document.querySelector("#openShopButton");
+const closeShopButtonEl = document.querySelector("#closeShopButton");
 const winAudio = new Audio("win.mp3");
-
-clearLogButtonEl.addEventListener("click", () => {
-  eventLogEl.innerHTML = "";
-});
 
 submitTaskButtonEl.addEventListener("click", () => {
   submitCurrentTask();
@@ -196,6 +198,23 @@ confirmSkillWorkerButtonEl.addEventListener("click", () => {
 
 cancelTransferButtonEl.addEventListener("click", () => {
   closeTransferModal();
+});
+
+openShopButtonEl.addEventListener("click", () => {
+  shopModalEl.classList.remove("hidden");
+  shopModalEl.setAttribute("aria-hidden", "false");
+});
+
+closeShopButtonEl.addEventListener("click", () => {
+  shopModalEl.classList.add("hidden");
+  shopModalEl.setAttribute("aria-hidden", "true");
+});
+
+shopModalEl.addEventListener("click", (event) => {
+  if (event.target === shopModalEl) {
+    shopModalEl.classList.add("hidden");
+    shopModalEl.setAttribute("aria-hidden", "true");
+  }
 });
 
 function createEntityId(type) {
@@ -283,13 +302,11 @@ function getNearestEmptyIndexToIndex(originIndex) {
 }
 
 function addLog(message, type = "info") {
-  const entry = document.createElement("div");
-  entry.className = "log-entry";
   if (type === "warning") {
-    entry.style.borderLeftColor = "var(--danger)";
+    console.warn(message);
+  } else {
+    console.log(message);
   }
-  entry.textContent = message;
-  eventLogEl.prepend(entry);
 }
 
 function clearSelection() {
@@ -509,24 +526,32 @@ function getSelectedPool() {
 
 function getEntityVisualMeta(entity) {
   if (entity.type === "talent") {
+    const baseMeta = ENTITY_META.talent[entity.level];
+    const roleIcon = entity.role ? ROLE_ICONS[entity.role] : null;
     return {
-      ...ENTITY_META.talent[entity.level],
-      name: getTalentDisplayName(entity.level, entity.role)
+      ...baseMeta,
+      name: getTalentDisplayName(entity.level, entity.role),
+      icon: roleIcon || baseMeta.icon
     };
   }
 
   if (entity.type === "pool") {
+    const baseMeta = ENTITY_META.pool[entity.level];
+    const roleIcon = entity.role ? ROLE_ICONS[entity.role] : null;
     return {
-      ...ENTITY_META.pool[entity.level],
-      name: entity.role ? `${entity.role}人才库` : ENTITY_META.pool[entity.level].name
+      ...baseMeta,
+      name: entity.role ? `${entity.role}人才库` : baseMeta.name,
+      icon: roleIcon || baseMeta.icon
     };
   }
 
   if (entity.type === "lockedTalent") {
+    const baseMeta = ENTITY_META.lockedTalent[entity.level];
+    const roleIcon = entity.role ? ROLE_ICONS[entity.role] : null;
     return {
-      ...ENTITY_META.lockedTalent[entity.level],
+      ...baseMeta,
       name: `积灰${getTalentDisplayName(entity.level, entity.role)}`,
-      icon: TALENT_META[entity.level].icon
+      icon: roleIcon || TALENT_META[entity.level].icon
     };
   }
 
@@ -589,14 +614,16 @@ function assignTutorialTask() {
 function buildFreeplayTask(baseTask) {
   const objective = { ...baseTask.objective };
   const targetName = TALENT_META[objective.level].name;
+  const levelIcon = TALENT_META[objective.level].icon;
 
   if (state.specializationUnlocked) {
     const role = getRandomJobFunction();
     objective.role = role;
+    const roleIcon = ROLE_ICONS[role];
     return {
       ...baseTask,
       department: getDepartmentName(role),
-      description: `${getDepartmentName(role)}需要 ${objective.count} 名${role}${targetName}。`,
+      description: `${getDepartmentName(role)}需要 ${objective.count} 名${roleIcon}${role}${targetName}。`,
       objective
     };
   }
@@ -605,7 +632,7 @@ function buildFreeplayTask(baseTask) {
   return {
     ...baseTask,
     department,
-    description: `${department}需要 ${objective.count} 名${targetName}。`,
+    description: `${department}需要 ${objective.count} 名${levelIcon}${targetName}。`,
     objective
   };
 }
@@ -1255,12 +1282,16 @@ function renderTask() {
   if (!state.currentTask) {
     return;
   }
+  const objective = state.currentTask.objective;
+  const levelIcon = TALENT_META[objective.level]?.icon || "";
+  const roleIcon = objective.role ? ROLE_ICONS[objective.role] : "";
+  
   taskSubtitleEl.textContent =
     !state.tutorialComplete && state.currentTask.id.startsWith("tutorial-")
       ? `入职培训 · ${state.currentTask.title}`
       : "";
   taskDescriptionEl.textContent = state.currentTask.description;
-  taskTargetEl.textContent = `任务进度：${getTaskProgress()} / ${state.currentTask.objective.count}`;
+  taskTargetEl.textContent = `任务进度：${getTaskProgress()} / ${objective.count} ${roleIcon}${levelIcon}`;
   taskRewardEl.textContent = getCurrentTaskRewardText();
   submitTaskButtonEl.disabled = !isTaskComplete() || state.isGameOver;
 }
