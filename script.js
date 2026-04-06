@@ -10,6 +10,7 @@ const SKILL_WORKER_EXCHANGE_TOKEN = 6;
 const KPI_TO_ACTION_COST = 10;
 const SPECIALIZATION_UNLOCK_AFTER_TASKS = 5;
 const TRANSFER_COST = 1;
+const POOL_COOLDOWN_MS = 300;
 const gsapApi = window.gsap ?? null;
 const interactApi = window.interact ?? null;
 const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -30,6 +31,14 @@ const ROLE_ICONS = {
   "运营": "📊",
   "行政": "📋"
 };
+
+Object.assign(TALENT_META, {
+  1: { ...TALENT_META[1], name: "实习生", icon: "🧑 💻" },
+  2: { ...TALENT_META[2], name: "应届生", icon: "👨 💻" },
+  3: { ...TALENT_META[3], name: "高级员工", icon: "👨‍💻 💻" },
+  4: { ...TALENT_META[4], name: "资深员工", icon: "👨‍💼 💻" },
+  5: { ...TALENT_META[5], name: "专家员工", icon: "👨‍🦳 💻" }
+});
 
 const ENTITY_META = {
   talent: TALENT_META,
@@ -69,7 +78,7 @@ const TUTORIAL_TASKS = [
     id: "tutorial-1",
     decisionPoints: 1,
     title: "入职培训 1",
-    description: "使用 1 点决策点和 1 点公司资金，采购一个 📦人才库，并把它拖进棋盘空格中后提交。",
+    description: "使用 1 点决策点和 1 点公司资金，采购一个 📦人才库，并点击暂存区中的它自动部署到棋盘空格后提交。",
     rewardText: "奖励：正式获得招聘权限",
     objective: { type: "board_pool_count", count: 1 }
   },
@@ -114,6 +123,16 @@ const FREEPLAY_TASKS = [
   { id: "task-4", decisionPoints: 6, rewardKpi: 12, objective: { type: "talent_level_count", level: 2, count: 2 } }
 ];
 
+Object.assign(TUTORIAL_TASKS[1], {
+  description: "点击棋盘中的人才库，消耗 1 点决策点，招募 1 名实习生，然后提交。"
+});
+Object.assign(TUTORIAL_TASKS[2], {
+  description: "再点击两次人才库，获得两名实习生。将他们合成为 1 名应届生后提交。"
+});
+Object.assign(TUTORIAL_TASKS[3], {
+  description: "把一个可活动的实习生拖到被封锁的实习生上，完成解锁并合成后提交。"
+});
+
 const state = {
   grid: [],
   stash: [],
@@ -134,6 +153,11 @@ const state = {
   pendingSkillWorkerIndex: null,
   pendingTransferIndex: null
 };
+
+state.incomingCells = new Set();
+state.mergeHintCells = new Set();
+state.lastInteractionAt = Date.now();
+state.poolCooldowns = new Map();
 
 const boardEl = document.querySelector("#board");
 const bubbleLayerEl = document.querySelector("#bubbleLayer");
@@ -158,6 +182,8 @@ const introModalEl = document.querySelector("#introModal");
 const startGameButtonEl = document.querySelector("#startGameButton");
 const specializationModalEl = document.querySelector("#specializationModal");
 const closeSpecializationButtonEl = document.querySelector("#closeSpecializationButton");
+const tutorialCompleteModalEl = document.querySelector("#tutorialCompleteModal");
+const closeTutorialCompleteButtonEl = document.querySelector("#closeTutorialCompleteButton");
 const skillWorkerModalEl = document.querySelector("#skillWorkerModal");
 const skillWorkerModalTextEl = document.querySelector("#skillWorkerModalText");
 const confirmSkillWorkerButtonEl = document.querySelector("#confirmSkillWorkerButton");
@@ -169,7 +195,94 @@ const cancelTransferButtonEl = document.querySelector("#cancelTransferButton");
 const shopModalEl = document.querySelector("#shopModal");
 const openShopButtonEl = document.querySelector("#openShopButton");
 const closeShopButtonEl = document.querySelector("#closeShopButton");
+const distillDropZoneEl = document.querySelector("#distillDropZone");
+const distillStoryModalEl = document.querySelector("#distillStoryModal");
+const storySpeakerEl = document.querySelector("#storySpeaker");
+const storyTextEl = document.querySelector("#storyText");
+const storyChoicesEl = document.querySelector("#storyChoices");
+const storyResultEl = document.querySelector("#storyResult");
+const storyResultTextEl = document.querySelector("#storyResultText");
+const storyRewardEl = document.querySelector("#storyReward");
+const closeStoryButtonEl = document.querySelector("#closeStoryButton");
+const toastEl = document.querySelector("#toast");
 const winAudio = new Audio("win.mp3");
+const mergeAudio = new Audio("creatorshome-pop-cartoon-328167.mp3");
+
+let pendingDistillEntity = null;
+let pendingDistillIndex = null;
+let toastTimer = null;
+
+const DISTILL_STORIES = {
+  pleas: [
+    "请不要裁掉我，我需要这份工作养活自己。",
+    "请不要裁掉我，我还有房贷要还，孩子要养。",
+    "求求你了，给我一次机会吧，我会更加努力的。",
+    "我在公司工作了这么久，没有功劳也有苦劳啊。",
+    "能不能再给我一个月的时间证明自己？",
+    "我家里还有老人要照顾，这份工作对我真的很重要。",
+    "我刚结婚，老婆还怀孕了，这个节骨眼失业我们怎么办？",
+    "我上个月刚买了车，每个月都要还车贷，求求你了。",
+    "我父母身体不好，医药费全靠我这份工资，求你了。",
+    "我孩子明年就要高考了，这时候失业会毁了他的前程。",
+    "我老婆刚做完手术，还在康复期，我不能没有工作。",
+    "我刚把老家房子卖了来城里，现在裁我，我回不去了。",
+    "我弟弟妹妹还在上学，学费都是我出的，求求你。",
+    "我单身一个人，这份工作是我唯一的寄托，别赶我走。",
+    "我在这干了五年了，从没迟到早退过，给个机会吧。",
+    "我愿意降薪，只要能留下，降多少都行。",
+    "我可以加班，周末也可以来，只要不被裁。",
+    "我老婆刚生二胎，奶粉钱都靠这份工资啊。",
+    "我上有老下有小，全家都指望我这份收入。",
+    "我知道最近表现不好，但我会改的，真的会改的。"
+  ],
+  choices: [
+    {
+      text: "你的能力不足，无法胜任工作。你应该主动离职谢罪。",
+      type: 1,
+      reward: { kpi: 3 },
+      leaderResponse: [
+        "做得好，你很有管理者的潜质。懂得用合适的方式处理问题，这才是专业。",
+        "漂亮。记住，管理就是要让员工自己选择离开，这样公司才能保持良好形象。",
+        "你越来越像个真正的管理者了。继续保持这种专业素养。",
+        "很好，你学会了最重要的管理技能：让员工自己承担责任。这才是高手的做法。",
+        "优秀。这种话术既保全了公司形象，又让员工无话可说。你进步很快。",
+        "不愧是我看中的人。处理这种事情，就该干净利落，不留后患。",
+        "你已经开始理解职场的本质了。记住，善良是管理者的奢侈品。",
+        "完美。员工离职是他自己的选择，公司没有任何责任。这就是专业。"
+      ]
+    },
+    {
+      text: "这是公司的决定，我也只是个执行人。",
+      type: 2,
+      reward: { kpi: 1 },
+      leaderResponse: [
+        "还可以，但你可以更专业一些。下次试着让员工觉得这是他自己的选择。",
+        "中规中矩。记住，好的管理者要学会把责任推给制度，而不是自己扛。",
+        "你还需要再磨练一下。处理这种事情，要更狠一些。",
+        "太直白了。你应该学会用更委婉的方式，让员工觉得你也是受害者。",
+        "勉强及格。但你要记住，管理者永远不要站在员工的对立面。",
+        "下次可以更圆滑一些。让员工觉得你尽力了，是公司不给他机会。",
+        "你的话术还需要打磨。好的管理者，要让员工感恩戴德地离开。",
+        "还不够老练。记住，你只是传话筒，不要让自己成为矛盾的焦点。"
+      ]
+    },
+    {
+      text: "我去尝试帮你跟领导争取一些补偿。",
+      type: 3,
+      reward: { funds: -1 },
+      leaderResponse: [
+        "你太心软了。管理不是做慈善，记住这一点。",
+        "我对你很失望。这种态度，怎么能在职场生存？",
+        "你这样下去，迟早会被淘汰的。学会狠心，才能走得更远。",
+        "你在浪费公司的钱。记住，每一分补偿都是从利润里扣的。",
+        "你的同情心用错了地方。员工是资源，不是朋友。",
+        "我需要重新评估你的管理潜力。这种软弱的表现让我很担忧。",
+        "你以为你在做好事？你只是在纵容无能，拖累团队。",
+        "记住今天的教训。职场不相信眼泪，也不相信同情。"
+      ]
+    }
+  ]
+};
 
 submitTaskButtonEl.addEventListener("click", () => {
   submitCurrentTask();
@@ -182,10 +295,15 @@ restartGameButtonEl.addEventListener("click", () => {
 startGameButtonEl.addEventListener("click", () => {
   introModalEl.classList.add("hidden");
   introModalEl.setAttribute("aria-hidden", "true");
+  render();
 });
 
 closeSpecializationButtonEl.addEventListener("click", () => {
   showSpecializationModal(false);
+});
+
+closeTutorialCompleteButtonEl.addEventListener("click", () => {
+  showTutorialCompleteModal(false);
 });
 
 cancelSkillWorkerButtonEl.addEventListener("click", () => {
@@ -214,6 +332,39 @@ shopModalEl.addEventListener("click", (event) => {
   if (event.target === shopModalEl) {
     shopModalEl.classList.add("hidden");
     shopModalEl.setAttribute("aria-hidden", "true");
+  }
+});
+
+document.addEventListener("pointerdown", () => {
+  markInteraction();
+}, true);
+
+closeStoryButtonEl.addEventListener("click", () => {
+  closeDistillStoryModal();
+});
+
+distillStoryModalEl.addEventListener("click", (event) => {
+  if (event.target === distillStoryModalEl && !storyResultEl.classList.contains("hidden")) {
+    closeDistillStoryModal();
+  }
+});
+
+distillDropZoneEl.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "move";
+  distillDropZoneEl.classList.add("drag-over");
+});
+
+distillDropZoneEl.addEventListener("dragleave", () => {
+  distillDropZoneEl.classList.remove("drag-over");
+});
+
+distillDropZoneEl.addEventListener("drop", (event) => {
+  event.preventDefault();
+  distillDropZoneEl.classList.remove("drag-over");
+  const transferData = event.dataTransfer.getData("text/plain");
+  if (transferData) {
+    handleDistillDrop(transferData);
   }
 });
 
@@ -309,6 +460,72 @@ function addLog(message, type = "info") {
   }
 }
 
+function markInteraction() {
+  state.lastInteractionAt = Date.now();
+  if (state.mergeHintCells.size > 0) {
+    state.mergeHintCells.clear();
+    renderBoard();
+  }
+}
+
+function setPoolCooldown(index, durationMs = POOL_COOLDOWN_MS) {
+  state.poolCooldowns.set(index, Date.now() + durationMs);
+}
+
+function getPoolCooldownProgress(index) {
+  const cooldownEnd = state.poolCooldowns.get(index);
+  if (!cooldownEnd) {
+    return 0;
+  }
+
+  const remaining = cooldownEnd - Date.now();
+  if (remaining <= 0) {
+    state.poolCooldowns.delete(index);
+    return 0;
+  }
+
+  return remaining / POOL_COOLDOWN_MS;
+}
+
+function isPoolCoolingDown(index) {
+  return getPoolCooldownProgress(index) > 0;
+}
+
+function showToast(message, type = "info") {
+  if (!toastEl) {
+    return;
+  }
+
+  if (toastTimer) {
+    window.clearTimeout(toastTimer);
+  }
+
+  toastEl.textContent = message;
+  toastEl.className = `toast ${type} show`;
+  toastEl.classList.remove("hidden");
+
+  toastTimer = window.setTimeout(() => {
+    toastEl.classList.remove("show");
+    window.setTimeout(() => {
+      toastEl.classList.add("hidden");
+      toastEl.className = "toast hidden";
+    }, 220);
+  }, 1800);
+}
+
+function getFirstEmptyIndex() {
+  return state.grid.findIndex((entity) => !entity);
+}
+
+function getEntityCardInnerMarkup(entity) {
+  const meta = getEntityVisualMeta(entity);
+  return `
+    <div class="talent-icon">${meta.icon}</div>
+    <div class="talent-name">${meta.name}</div>
+    <div class="talent-level">Lv.${entity.level}</div>
+  `;
+}
+
 function clearSelection() {
   state.selectedCell = null;
 }
@@ -326,6 +543,14 @@ function showSpecializationModal(visible) {
   specializationModalEl.setAttribute("aria-hidden", String(!visible));
   if (visible) {
     animateModalEntrance(specializationModalEl);
+  }
+}
+
+function showTutorialCompleteModal(visible) {
+  tutorialCompleteModalEl.classList.toggle("hidden", !visible);
+  tutorialCompleteModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(tutorialCompleteModalEl);
   }
 }
 
@@ -396,13 +621,58 @@ function animateCell(index, className = "merge-pop") {
       return;
     }
     const card = cell.querySelector(".talent-card");
-    if (card && animateWithGsap(card, { scale: 0.82, y: 8 }, {
-      scale: 1,
-      y: 0,
-      duration: 0.24,
-      ease: "back.out(1.5)",
-      clearProps: "transform"
-    })) {
+    const animationHandled = card && (
+      className === "pool-spawn"
+        ? !!gsapApi && !prefersReducedMotion && (() => {
+            gsapApi.killTweensOf(card);
+            const timeline = gsapApi.timeline({
+              defaults: { overwrite: "auto" },
+              onComplete: () => gsapApi.set(card, { clearProps: "transform,opacity" })
+            });
+            timeline
+              .fromTo(card, {
+                scale: 0.9,
+                y: 10,
+                opacity: 0.45
+              }, {
+                scale: 1.015,
+                y: -1,
+                opacity: 1,
+                duration: 0.16,
+                ease: "power2.out"
+              })
+              .to(card, {
+                scale: 0.996,
+                y: 0.5,
+                duration: 0.07,
+                ease: "sine.inOut"
+              })
+              .to(card, {
+                scale: 1,
+                y: 0,
+                duration: 0.07,
+                ease: "sine.out"
+              });
+            return true;
+          })()
+        : className === "pool-idle-prompt"
+          ? animateWithGsap(card, { scale: 1 }, {
+              scale: 1.035,
+              duration: 0.18,
+              yoyo: true,
+              repeat: 1,
+              ease: "power1.inOut",
+              clearProps: "transform"
+            })
+          : animateWithGsap(card, { scale: 0.82, y: 8 }, {
+              scale: 1,
+              y: 0,
+              duration: 0.24,
+              ease: "back.out(1.5)",
+              clearProps: "transform"
+            })
+    );
+    if (animationHandled) {
       return;
     }
     cell.classList.remove(className);
@@ -499,6 +769,138 @@ function initializeEnhancedInteractions() {
       }
     }
   });
+
+  interactApi(distillDropZoneEl).dropzone({
+    accept: ".js-draggable",
+    overlap: 0.3,
+    ondragenter(event) {
+      event.target.classList.add("drag-over");
+    },
+    ondragleave(event) {
+      event.target.classList.remove("drag-over");
+    },
+    ondrop(event) {
+      event.target.classList.remove("drag-over");
+      const transferData = event.relatedTarget.dataset.transfer;
+      if (!transferData) {
+        return;
+      }
+      handleDistillDrop(transferData);
+    }
+  });
+}
+
+function handleDistillDrop(transferData) {
+  const parts = transferData.split(":");
+  if (parts.length < 2) {
+    return;
+  }
+  
+  const source = parts[0];
+  const idOrIndex = parts[1];
+  
+  if (source === "cell" || source === "board") {
+    const index = parseInt(idOrIndex, 10);
+    const entity = state.grid[index];
+    if (!entity || entity.type !== "talent") {
+      addLog("只能蒸馏员工，无法蒸馏其他类型的资产。", "warning");
+      return;
+    }
+    
+    pendingDistillEntity = entity;
+    pendingDistillIndex = index;
+    pendingDistillSource = "board";
+    
+    showDistillStoryModal(entity);
+  } else if (source === "stash") {
+    const stashIndex = state.stash.findIndex(e => e.id === idOrIndex);
+    if (stashIndex === -1) {
+      return;
+    }
+    const entity = state.stash[stashIndex];
+    if (!entity || entity.type !== "talent") {
+      addLog("只能蒸馏员工，无法蒸馏其他类型的资产。", "warning");
+      return;
+    }
+    
+    pendingDistillEntity = entity;
+    pendingDistillIndex = stashIndex;
+    pendingDistillSource = "stash";
+    showDistillStoryModal(entity);
+  }
+}
+
+let pendingDistillSource = "board";
+
+function showDistillStoryModal(entity) {
+  const displayName = getTalentDisplayName(entity.level, entity.role);
+  const plea = randomFromList(DISTILL_STORIES.pleas);
+  
+  storySpeakerEl.textContent = displayName;
+  storyTextEl.textContent = plea;
+  
+  storyChoicesEl.innerHTML = "";
+  DISTILL_STORIES.choices.forEach((choice, index) => {
+    const button = document.createElement("button");
+    button.className = `story-choice choice-${choice.type}`;
+    button.textContent = choice.text;
+    button.addEventListener("click", () => handleStoryChoice(choice, entity));
+    storyChoicesEl.appendChild(button);
+  });
+  
+  storyResultEl.classList.add("hidden");
+  closeStoryButtonEl.classList.add("hidden");
+  
+  distillStoryModalEl.classList.remove("hidden");
+  distillStoryModalEl.setAttribute("aria-hidden", "false");
+}
+
+function handleStoryChoice(choice, entity) {
+  const displayName = getTalentDisplayName(entity.level, entity.role);
+  const leaderResponse = randomFromList(choice.leaderResponse);
+  
+  if (choice.reward.kpi) {
+    state.kpi += choice.reward.kpi;
+  }
+  if (choice.reward.funds) {
+    state.companyFunds += choice.reward.funds;
+  }
+  
+  const tokenReward = getDecomposeReward(entity.level);
+  state.tokens += tokenReward;
+  state.totalDistilled += 1;
+  
+  if (pendingDistillSource === "stash") {
+    state.stash.splice(pendingDistillIndex, 1);
+  } else {
+    state.grid[pendingDistillIndex] = null;
+  }
+  
+  storyResultTextEl.textContent = leaderResponse;
+  
+  let rewardText = `获得 ${tokenReward} Token`;
+  if (choice.reward.kpi) {
+    rewardText += `，${choice.reward.kpi > 0 ? "获得" : "扣除"} ${Math.abs(choice.reward.kpi)} KPI`;
+  }
+  if (choice.reward.funds) {
+    rewardText += `，${choice.reward.funds > 0 ? "获得" : "消耗"} ${Math.abs(choice.reward.funds)} 公司资金`;
+  }
+  storyRewardEl.textContent = rewardText;
+  
+  storyChoicesEl.innerHTML = "";
+  storyResultEl.classList.remove("hidden");
+  closeStoryButtonEl.classList.remove("hidden");
+  
+  addLog(`裁员完成：${displayName} 已离职。${rewardText}`);
+  
+  render();
+}
+
+function closeDistillStoryModal() {
+  distillStoryModalEl.classList.add("hidden");
+  distillStoryModalEl.setAttribute("aria-hidden", "true");
+  pendingDistillEntity = null;
+  pendingDistillIndex = null;
 }
 
 function isLockedTalent(entity) {
@@ -511,17 +913,6 @@ function isSelectedTalent() {
 
 function isSelectedTalentUpgradeable() {
   return isSelectedTalent() && state.grid[state.selectedCell].level < MAX_LEVEL;
-}
-
-function getSelectedPool() {
-  if (state.selectedCell === null) {
-    return null;
-  }
-  const entity = state.grid[state.selectedCell];
-  if (!entity || entity.type !== "pool") {
-    return null;
-  }
-  return { entity, index: state.selectedCell };
 }
 
 function getEntityVisualMeta(entity) {
@@ -689,6 +1080,7 @@ function finishTutorial() {
   state.tutorialComplete = true;
   addLog("你的入职培训完成了，接下来自己摸索吧。如果没在规定的决策点内完成任务，你就被炒鱿鱼了。");
   assignFreeplayTask();
+  showTutorialCompleteModal(true);
 }
 
 function consumeSubmittedTalents(task) {
@@ -713,6 +1105,11 @@ function consumeSubmittedTalents(task) {
 function playWinSound() {
   winAudio.currentTime = 0;
   winAudio.play().catch(() => {});
+}
+
+function playMergeSound() {
+  mergeAudio.currentTime = 0;
+  mergeAudio.play().catch(() => {});
 }
 
 function submitCurrentTask() {
@@ -838,7 +1235,7 @@ const SHOP_ITEMS = [
     id: "buy-pool",
     name: "采购人才库",
     costLabel: "1 决策点 + 1 资金",
-    description: "采购一个 1 级人才库，放入暂存区后可拖进棋盘。",
+    description: "采购一个 1 级人才库，放入暂存区后点击即可自动部署到棋盘。",
     isDisabled: () => state.specializationUnlocked || state.decisionPoints < 1 || state.companyFunds < 1 || state.isGameOver,
     use: () => {
       if (!spendDecisionPoint(1, "采购人才库")) {
@@ -957,22 +1354,26 @@ const SPECIALIZED_POOL_ITEMS = JOB_FUNCTIONS.map((role) => ({
       return;
     }
     state.stash.push(createEntity("pool", 1, { role }));
-    addLog(`${role}人才库已加入暂存区，拖进棋盘后即可稳定生产对应职能人才。`);
+  addLog(`${role}人才库已加入暂存区，点击即可自动部署到棋盘并稳定生产对应职能人才。`);
     render();
   }
 }));
 
-function recruitFromSelectedPool() {
-  const selectedPool = getSelectedPool();
-  if (!selectedPool) {
+function recruitFromPool(poolIndex) {
+  const entity = state.grid[poolIndex];
+  if (!entity || entity.type !== "pool") {
     return;
   }
+  if (isPoolCoolingDown(poolIndex)) {
+    return;
+  }
+  const sourceRect = boardEl.querySelector(`[data-index="${poolIndex}"] .talent-card`)?.getBoundingClientRect() ?? null;
   if (!spendDecisionPoint(1, "人才库招募")) {
     render();
     return;
   }
 
-  const spawnIndex = getNearestEmptyIndexToIndex(selectedPool.index);
+  const spawnIndex = getNearestEmptyIndexToIndex(poolIndex);
   if (spawnIndex === -1) {
     state.decisionPoints += 1;
     addLog("棋盘没有空位，无法继续招募。", "warning");
@@ -980,13 +1381,16 @@ function recruitFromSelectedPool() {
     return;
   }
 
-  const level = randomFromWeighted(POOL_WEIGHTS[selectedPool.entity.level]);
-  const role = state.specializationUnlocked ? (selectedPool.entity.role || "行政") : undefined;
+  const level = randomFromWeighted(POOL_WEIGHTS[entity.level]);
+  const role = state.specializationUnlocked ? (entity.role || "行政") : undefined;
   state.grid[spawnIndex] = createEntity("talent", level, role ? { role } : {});
-  addLog(`人才库 Lv.${selectedPool.entity.level} 招募到 ${getTalentDisplayName(level, role)}。`);
+  state.incomingCells.add(spawnIndex);
+  setPoolCooldown(poolIndex);
+  addLog(`人才库 Lv.${entity.level} 招募到 ${getTalentDisplayName(level, role)}。`);
+  
   render();
-  animateCell(selectedPool.index);
-  animateCell(spawnIndex);
+  animateCell(poolIndex);
+  animateRecruitFromPool(sourceRect, spawnIndex, state.grid[spawnIndex]);
 }
 
 function canMergeEntities(source, target) {
@@ -1003,6 +1407,90 @@ function canMergeEntities(source, target) {
     return false;
   }
   return true;
+}
+
+function getMergeHintIndices() {
+  const pairs = [];
+  for (let fromIndex = 0; fromIndex < state.grid.length; fromIndex += 1) {
+    const source = state.grid[fromIndex];
+    if (!source || state.incomingCells.has(fromIndex)) {
+      continue;
+    }
+
+    for (let toIndex = fromIndex + 1; toIndex < state.grid.length; toIndex += 1) {
+      const target = state.grid[toIndex];
+      if (!target || state.incomingCells.has(toIndex)) {
+        continue;
+      }
+
+      if (canMergeEntities(source, target) || (isLockedTalent(target) && canMergeEntities(source, target))) {
+        pairs.push([fromIndex, toIndex]);
+      }
+      if (isLockedTalent(source) && canMergeEntities(target, source)) {
+        pairs.push([fromIndex, toIndex]);
+      }
+    }
+  }
+
+  return randomFromList(pairs) ?? [];
+}
+
+function pulseAvailablePools() {
+  if (state.isGameOver || state.decisionPoints <= 0 || state.incomingCells.size > 0) {
+    return;
+  }
+
+  state.grid.forEach((entity, index) => {
+    if (entity?.type === "pool" && !isPoolCoolingDown(index)) {
+      animateCell(index, "pool-idle-prompt");
+    }
+  });
+}
+
+function maybeShowMergeHints() {
+  if (state.isGameOver || state.incomingCells.size > 0) {
+    return;
+  }
+
+  const idleFor = Date.now() - state.lastInteractionAt;
+  if (idleFor < 3000) {
+    return;
+  }
+
+  const hintIndices = getMergeHintIndices();
+  if (hintIndices.length !== 2) {
+    return;
+  }
+
+  const nextHints = new Set(hintIndices);
+  const isSame =
+    state.mergeHintCells.size === nextHints.size &&
+    [...nextHints].every((index) => state.mergeHintCells.has(index));
+
+  if (!isSame) {
+    state.mergeHintCells = nextHints;
+    renderBoard();
+  }
+}
+
+function tickPoolCooldowns() {
+  if (state.poolCooldowns.size === 0) {
+    return;
+  }
+
+  let changed = false;
+  for (const [index, cooldownEnd] of state.poolCooldowns.entries()) {
+    if (cooldownEnd <= Date.now()) {
+      state.poolCooldowns.delete(index);
+      changed = true;
+    } else {
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    renderBoard();
+  }
 }
 
 function mergeEntities(fromIndex, toIndex) {
@@ -1027,6 +1515,7 @@ function mergeEntities(fromIndex, toIndex) {
     maybeSpawnBubble(nextLevel);
   }
 
+  playMergeSound();
   state.selectedCell = toIndex;
   render();
   animateCell(toIndex);
@@ -1055,6 +1544,8 @@ function unlockLockedCell(fromIndex, toIndex) {
   state.totalUnlockedCells += 1;
   state.selectedCell = toIndex;
   addLog(`积灰格已解锁，并合成出 ${getTalentDisplayName(nextLevel, source.role)}。`);
+  
+  playMergeSound();
   render();
   animateCell(toIndex);
   maybeSpawnBubble(nextLevel);
@@ -1129,11 +1620,12 @@ function handleCellClick(index) {
     return;
   }
 
+  if (state.incomingCells.has(index)) {
+    return;
+  }
+
   const entity = state.grid[index];
   if (!entity) {
-    clearSelection();
-    renderBoard();
-    renderShop();
     return;
   }
 
@@ -1142,41 +1634,27 @@ function handleCellClick(index) {
     return;
   }
 
-  if (state.selectedCell === null) {
-    state.selectedCell = index;
-    renderBoard();
-    renderShop();
+  if (entity.type === "pool") {
+    recruitFromPool(index);
     return;
   }
 
-  if (state.selectedCell === index) {
-    if (entity.type === "pool") {
-      recruitFromSelectedPool();
-      return;
-    }
-    if (entity.type === "skillWorker") {
-      addLog("双击 员工.Skill 可以弹出确认框，用 Token 换取公司资金。");
-      return;
-    }
-    if (entity.type === "talent" && state.specializationUnlocked) {
-      addLog("双击员工可以打开转岗窗口，消耗公司资金更换职能。");
-      return;
-    }
-    renderBoard();
-    renderShop();
+  if (entity.type === "skillWorker") {
+    addLog("双击 员工.Skill 可以弹出确认框，用 Token 换取公司资金。");
     return;
   }
 
-  const merged = mergeEntities(state.selectedCell, index);
-  if (!merged) {
-    state.selectedCell = index;
-    renderBoard();
-    renderShop();
+  if (entity.type === "talent" && state.specializationUnlocked) {
+    addLog("双击员工可以打开转岗窗口，消耗公司资金更换职能。");
   }
 }
 
 function handleBoardDrop(rawData, toIndex) {
   if (state.isGameOver || !rawData) {
+    return;
+  }
+
+  if (state.incomingCells.has(toIndex)) {
     return;
   }
 
@@ -1192,6 +1670,7 @@ function handleBoardDrop(rawData, toIndex) {
     }
     state.grid[toIndex] = state.stash.splice(stashIndex, 1)[0];
     addLog(`${getEntityVisualMeta(state.grid[toIndex]).name} 已部署进棋盘。`);
+    
     render();
     animateCell(toIndex);
     return;
@@ -1217,6 +1696,162 @@ function handleBoardDrop(rawData, toIndex) {
   mergeEntities(fromIndex, toIndex);
 }
 
+function animatePlacementFromStash(sourceEl, toIndex) {
+  if (prefersReducedMotion || !sourceEl) {
+    animateCell(toIndex);
+    return;
+  }
+
+  const targetCard = boardEl.querySelector(`[data-index="${toIndex}"] .talent-card`);
+  if (!targetCard) {
+    animateCell(toIndex);
+    return;
+  }
+
+  const sourceRect = sourceEl.getBoundingClientRect();
+  const targetRect = targetCard.getBoundingClientRect();
+  const clone = sourceEl.cloneNode(true);
+
+  clone.classList.add("placement-ghost");
+  clone.style.position = "fixed";
+  clone.style.left = `${sourceRect.left}px`;
+  clone.style.top = `${sourceRect.top}px`;
+  clone.style.width = `${sourceRect.width}px`;
+  clone.style.height = `${sourceRect.height}px`;
+  clone.style.margin = "0";
+  clone.style.pointerEvents = "none";
+  clone.style.zIndex = "120";
+  document.body.append(clone);
+
+  if (gsapApi) {
+    gsapApi.fromTo(clone, {
+      x: 0,
+      y: 0,
+      scale: 1,
+      opacity: 0.96
+    }, {
+      x: targetRect.left - sourceRect.left,
+      y: targetRect.top - sourceRect.top,
+      scale: targetRect.width / Math.max(sourceRect.width, 1),
+      opacity: 0.18,
+      duration: 0.42,
+      ease: "power2.inOut",
+      onComplete: () => clone.remove()
+    });
+  } else {
+    clone.style.transition = "transform 420ms ease, opacity 420ms ease";
+    requestAnimationFrame(() => {
+      clone.style.transform = `translate(${targetRect.left - sourceRect.left}px, ${targetRect.top - sourceRect.top}px) scale(${targetRect.width / Math.max(sourceRect.width, 1)})`;
+      clone.style.opacity = "0.18";
+    });
+    window.setTimeout(() => clone.remove(), 440);
+  }
+
+  animateCell(toIndex);
+}
+
+function deployStashEntity(stashId, sourceEl = null) {
+  if (state.isGameOver) {
+    return;
+  }
+
+  const stashIndex = state.stash.findIndex((entity) => entity.id === stashId);
+  if (stashIndex === -1) {
+    return;
+  }
+
+  const emptyIndex = getFirstEmptyIndex();
+  if (emptyIndex === -1) {
+    const message = "棋盘空位不足，无法部署暂存区资产。";
+    addLog(message, "warning");
+    showToast(message, "warning");
+    return;
+  }
+
+  state.grid[emptyIndex] = state.stash.splice(stashIndex, 1)[0];
+  addLog(`${getEntityVisualMeta(state.grid[emptyIndex]).name} 已部署进棋盘。`);
+  render();
+  animatePlacementFromStash(sourceEl, emptyIndex);
+}
+
+function animateRecruitFromPool(sourceRect, toIndex, entity) {
+  if (prefersReducedMotion || !sourceRect) {
+    state.incomingCells.delete(toIndex);
+    renderBoard();
+    animateCell(toIndex, "pool-spawn");
+    return;
+  }
+
+  const targetCell = boardEl.querySelector(`[data-index="${toIndex}"]`);
+  if (!targetCell) {
+    state.incomingCells.delete(toIndex);
+    renderBoard();
+    animateCell(toIndex, "pool-spawn");
+    return;
+  }
+
+  const targetRect = targetCell.getBoundingClientRect();
+  const ghost = document.createElement("div");
+  const meta = getEntityVisualMeta(entity);
+  ghost.className = `talent-card recruit-ghost ${meta.colorClass} ${entity.type === "skillWorker" ? "skill-worker-card" : ""}`;
+  ghost.innerHTML = getEntityCardInnerMarkup(entity);
+  ghost.style.position = "fixed";
+  ghost.style.left = `${sourceRect.left + sourceRect.width / 2 - (targetRect.width - 10) / 2}px`;
+  ghost.style.top = `${sourceRect.top + sourceRect.height / 2 - (targetRect.height - 10) / 2}px`;
+  ghost.style.width = `${targetRect.width - 10}px`;
+  ghost.style.height = `${targetRect.height - 10}px`;
+  ghost.style.pointerEvents = "none";
+  ghost.style.zIndex = "130";
+  document.body.append(ghost);
+
+  const startLeft = sourceRect.left + sourceRect.width / 2 - (targetRect.width - 10) / 2;
+  const startTop = sourceRect.top + sourceRect.height / 2 - (targetRect.height - 10) / 2;
+  const finalLeft = targetRect.left + 5;
+  const finalTop = targetRect.top + 5;
+  const deltaX = finalLeft - startLeft;
+  const deltaY = finalTop - startTop;
+
+  const revealRecruitedCard = () => {
+    state.incomingCells.delete(toIndex);
+    renderBoard();
+    animateCell(toIndex, "pool-spawn");
+  };
+
+  if (gsapApi) {
+    gsapApi.fromTo(ghost, {
+      x: 0,
+      y: 0,
+      scale: 0.28,
+      opacity: 0.16,
+      rotate: -10
+    }, {
+      x: deltaX,
+      y: deltaY,
+      scale: 1.08,
+      opacity: 1,
+      rotate: 0,
+      duration: 0.52,
+      ease: "back.out(1.45)",
+      onComplete: () => {
+        ghost.remove();
+        revealRecruitedCard();
+      }
+    });
+  } else {
+    ghost.style.transform = "scale(0.28) rotate(-10deg)";
+    ghost.style.opacity = "0.16";
+    ghost.style.transition = "transform 520ms cubic-bezier(0.22, 1.2, 0.36, 1), opacity 520ms ease";
+    requestAnimationFrame(() => {
+      ghost.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.08) rotate(0deg)`;
+      ghost.style.opacity = "1";
+    });
+    window.setTimeout(() => {
+      ghost.remove();
+      revealRecruitedCard();
+    }, 540);
+  }
+}
+
 function getEntityLabel(entity) {
   const meta = getEntityVisualMeta(entity);
   return `${meta.name} Lv.${entity.level}`;
@@ -1225,11 +1860,17 @@ function getEntityLabel(entity) {
 function renderBoard() {
   boardEl.innerHTML = "";
   state.grid.forEach((entity, index) => {
+    const isIncoming = state.incomingCells.has(index);
+    const isMergeHint = state.mergeHintCells.has(index);
+    const visibleEntity = isIncoming ? null : entity;
     const cell = document.createElement("button");
-    cell.className = `cell ${entity ? "" : "empty"} ${state.selectedCell === index ? "selected" : ""}`;
+    cell.className = `cell ${visibleEntity ? "" : "empty"} ${isIncoming ? "incoming-cell" : ""} ${isMergeHint ? "merge-hint-cell" : ""}`;
     cell.dataset.index = String(index);
     cell.addEventListener("click", () => handleCellClick(index));
     cell.addEventListener("dblclick", () => {
+      if (state.incomingCells.has(index)) {
+        return;
+      }
       if (state.grid[index]?.type === "skillWorker") {
         openSkillWorkerModal(index);
       } else if (state.grid[index]?.type === "talent" && state.specializationUnlocked) {
@@ -1249,11 +1890,12 @@ function renderBoard() {
       handleBoardDrop(event.dataTransfer.getData("text/plain"), index);
     });
 
-    if (entity) {
-      const meta = getEntityVisualMeta(entity);
+    if (visibleEntity) {
       const card = document.createElement("div");
-      const isMovable = entity.type !== "lockedTalent";
-      card.className = `talent-card ${meta.colorClass} ${entity.type === "skillWorker" ? "skill-worker-card" : ""} ${isMovable && interactApi ? "js-draggable" : ""}`;
+      const isMovable = visibleEntity.type !== "lockedTalent";
+      const meta = getEntityVisualMeta(visibleEntity);
+      const cooldownProgress = visibleEntity.type === "pool" ? getPoolCooldownProgress(index) : 0;
+      card.className = `talent-card ${meta.colorClass} ${visibleEntity.type === "skillWorker" ? "skill-worker-card" : ""} ${isMovable && interactApi ? "js-draggable" : ""} ${isMergeHint ? "merge-hint-card" : ""}`;
       card.draggable = isMovable && !interactApi;
       if (isMovable) {
         card.dataset.transfer = `cell:${index}`;
@@ -1263,15 +1905,18 @@ function renderBoard() {
           event.dataTransfer.setData("text/plain", `cell:${index}`);
         });
       }
-      card.innerHTML = `
-        <div class="talent-icon">${meta.icon}</div>
-        <div class="talent-name">${meta.name}</div>
-        <div class="talent-level">Lv.${entity.level}</div>
-      `;
+      card.innerHTML = getEntityCardInnerMarkup(visibleEntity);
+      if (visibleEntity.type === "pool") {
+        const cooldownEl = document.createElement("div");
+        cooldownEl.className = `pool-cooldown ${cooldownProgress > 0 ? "active" : ""}`;
+        cooldownEl.style.setProperty("--cooldown-progress", String(cooldownProgress));
+        cooldownEl.innerHTML = `<span class="pool-cooldown-core"></span>`;
+        card.append(cooldownEl);
+      }
       cell.append(card);
-      cell.title = entity.type === "talent" && state.specializationUnlocked
-        ? `${getEntityLabel(entity)}，双击可转岗`
-        : getEntityLabel(entity);
+      cell.title = visibleEntity.type === "talent" && state.specializationUnlocked
+        ? `${getEntityLabel(visibleEntity)}，双击可转岗`
+        : getEntityLabel(visibleEntity);
     }
 
     boardEl.append(cell);
@@ -1285,13 +1930,14 @@ function renderTask() {
   const objective = state.currentTask.objective;
   const levelIcon = TALENT_META[objective.level]?.icon || "";
   const roleIcon = objective.role ? ROLE_ICONS[objective.role] : "";
+  const iconText = [roleIcon, levelIcon].filter(Boolean).join(" ");
   
   taskSubtitleEl.textContent =
     !state.tutorialComplete && state.currentTask.id.startsWith("tutorial-")
       ? `入职培训 · ${state.currentTask.title}`
       : "";
   taskDescriptionEl.textContent = state.currentTask.description;
-  taskTargetEl.textContent = `任务进度：${getTaskProgress()} / ${objective.count} ${roleIcon}${levelIcon}`;
+  taskTargetEl.textContent = `任务进度：${getTaskProgress()} / ${objective.count}${iconText ? ` ${iconText}` : ""}`;
   taskRewardEl.textContent = getCurrentTaskRewardText();
   submitTaskButtonEl.disabled = !isTaskComplete() || state.isGameOver;
 }
@@ -1301,22 +1947,18 @@ function renderStash() {
   stashPanelEl.classList.toggle("stash-pending", state.stash.length > 0);
   stashListEl.innerHTML = "";
   if (state.stash.length === 0) {
-    stashListEl.innerHTML = `<div class="small-text">暂无待部署资产。</div>`;
+    stashListEl.innerHTML = `<div class="stash-item-empty">暂无待部署资产。</div>`;
     return;
   }
 
   state.stash.forEach((entity) => {
-    const meta = getEntityVisualMeta(entity);
     const item = document.createElement("button");
-    item.className = `stash-item ${interactApi ? "js-draggable" : ""}`;
-    item.draggable = !interactApi;
-    item.dataset.transfer = `stash:${entity.id}`;
-    item.textContent = `${meta.icon} ${meta.name} Lv.${entity.level}`;
-    if (!interactApi) {
-      item.addEventListener("dragstart", (event) => {
-        event.dataTransfer.setData("text/plain", `stash:${entity.id}`);
-      });
-    }
+    item.className = "stash-item";
+    item.type = "button";
+    item.dataset.stashId = entity.id;
+    const meta = getEntityVisualMeta(entity);
+    item.innerHTML = `<div class="talent-card ${meta.colorClass} ${entity.type === "skillWorker" ? "skill-worker-card" : ""} stash-card">${getEntityCardInnerMarkup(entity)}</div>`;
+    item.addEventListener("click", () => deployStashEntity(entity.id, item));
     stashListEl.append(item);
   });
 }
@@ -1336,6 +1978,7 @@ function renderShop() {
       descText = `蒸馏当前选中的 ${getTalentDisplayName(selectedTalent.level, selectedTalent.role)}，返还 ${getDecomposeReward(selectedTalent.level)} Token。`;
     }
 
+    button.id = item.id;
     button.querySelector(".shop-title").textContent = item.name;
     button.querySelector(".shop-cost").textContent = costText;
     button.querySelector(".shop-desc").textContent = descText;
@@ -1413,6 +2056,19 @@ function render() {
   renderBoard();
   renderShop();
   renderBubbles();
+  renderDistillPanel();
+}
+
+function renderDistillPanel() {
+  const distillPanel = document.querySelector("#distillPanel");
+  const shouldShow = state.tutorialComplete || 
+    (state.currentTask && state.currentTask.id === "tutorial-5");
+  
+  if (shouldShow) {
+    distillPanel.classList.remove("hidden");
+  } else {
+    distillPanel.classList.add("hidden");
+  }
 }
 
 function restartGame() {
@@ -1434,10 +2090,15 @@ function restartGame() {
   state.specializationUnlocked = false;
   state.pendingSkillWorkerIndex = null;
   state.pendingTransferIndex = null;
+  state.incomingCells = new Set();
+  state.mergeHintCells = new Set();
+  state.lastInteractionAt = Date.now();
+  state.poolCooldowns = new Map();
 
   assignTutorialTask();
   showFailureModal(false);
   showSpecializationModal(false);
+  showTutorialCompleteModal(false);
   closeSkillWorkerModal();
   closeTransferModal();
   addLog("你重生了，这一世你再次入职成功。新的培训任务已经发到你的桌上。");
@@ -1447,3 +2108,6 @@ function restartGame() {
 initializeEnhancedInteractions();
 restartGame();
 window.setInterval(tickBubbles, 1000);
+window.setInterval(tickPoolCooldowns, 100);
+window.setInterval(pulseAvailablePools, 3000);
+window.setInterval(maybeShowMergeHints, 1000);

@@ -2,67 +2,38 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>职场生存战</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar">
-      <div class="topbar-main panel">
-        <div class="topbar-left">
-          <div class="title-group">
-            <p class="eyebrow">Retro Office Merge</p>
-            <h1>职场生存战</h1>
-          </div>
-          <button id="openShopButton" class="shop-toggle-button">🛒 技能商店</button>
+    <header class="topbar panel">
+      <div class="topbar-left">
+        <button id="openShopButton" class="shop-toggle-button">🛒 技能商店</button>
+      </div>
+      <div class="resource-strip">
+        <div class="resource-card">
+          <span>公司资金</span>
+          <strong id="companyFunds">0</strong>
         </div>
-        <div class="resource-strip">
-          <div class="resource-card">
-            <span>决策点</span>
-            <strong id="decisionPoints">0</strong>
-          </div>
-          <div class="resource-card">
-            <span>公司资金</span>
-            <strong id="companyFunds">0</strong>
-          </div>
-          <div class="resource-card">
-            <span>Token</span>
-            <strong id="tokenCount">0</strong>
-          </div>
-          <div class="resource-card">
-            <span>KPI</span>
-            <strong id="kpiCount">0</strong>
-          </div>
+        <div class="resource-card">
+          <span>Token</span>
+          <strong id="tokenCount">0</strong>
+        </div>
+        <div class="resource-card">
+          <span>KPI</span>
+          <strong id="kpiCount">0</strong>
+        </div>
+        <div class="resource-card decision-card">
+          <span>决策点</span>
+          <strong id="decisionPoints">0</strong>
         </div>
       </div>
     </header>
 
     <main class="game-layout">
       <section class="center-column">
-        <div class="top-row">
-          <section class="panel pool-panel" id="stashPanel">
-            <div class="panel-title-row">
-              <h2>暂存区</h2>
-              <span id="stashCountLabel">0 个</span>
-            </div>
-            <div id="stashList" class="stash-list"></div>
-          </section>
-
-          <section class="panel task-panel">
-            <div class="panel-title-row">
-              <h2>任务单</h2>
-            </div>
-            <p id="taskSubtitle" class="eyebrow"></p>
-            <p id="taskDescription" class="task-text task-description"></p>
-            <div class="task-meta">
-              <span id="taskTarget"></span>
-              <span id="taskReward"></span>
-            </div>
-            <button id="submitTaskButton" class="primary-button">提交需求</button>
-          </section>
-        </div>
-
         <section class="board-section panel">
           <div class="panel-title-row">
             <h2>办公棋盘</h2>
@@ -74,6 +45,37 @@
       </section>
 
       <aside class="right-column">
+        <section class="panel pool-panel" id="stashPanel">
+          <div class="panel-title-row">
+            <h2>暂存区</h2>
+            <span id="stashCountLabel">0 个</span>
+          </div>
+          <div id="stashList" class="stash-list"></div>
+        </section>
+
+        <section class="panel task-panel">
+          <div class="panel-title-row">
+            <h2>任务单</h2>
+          </div>
+          <p id="taskSubtitle" class="eyebrow"></p>
+          <p id="taskDescription" class="task-text task-description"></p>
+          <div class="task-meta">
+            <span id="taskTarget"></span>
+            <span id="taskReward"></span>
+          </div>
+          <button id="submitTaskButton" class="primary-button">提交需求</button>
+        </section>
+
+        <section class="panel distill-panel hidden" id="distillPanel">
+          <div class="panel-title-row">
+            <h2>裁员蒸馏</h2>
+          </div>
+          <div class="distill-drop-zone" id="distillDropZone">
+            <span class="distill-icon">🗑️</span>
+            <span class="distill-text">拖拽员工至此</span>
+          </div>
+        </section>
+
         <section class="panel pool-panel hidden" id="poolStorePanel" aria-hidden="true">
           <div class="panel-title-row">
             <h2>人才库采购</h2>
@@ -104,6 +106,22 @@
     </button>
   </template>
 
+  <div id="distillStoryModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel distill-story-modal">
+      <div class="story-dialog">
+        <div class="story-speaker" id="storySpeaker">员工</div>
+        <div class="story-text" id="storyText"></div>
+      </div>
+      <div class="story-choices" id="storyChoices"></div>
+      <div class="story-result hidden" id="storyResult">
+        <div class="story-speaker">神秘领导</div>
+        <div class="story-text" id="storyResultText"></div>
+        <div class="story-reward" id="storyReward"></div>
+      </div>
+      <button id="closeStoryButton" class="secondary-button hidden">继续工作</button>
+    </div>
+  </div>
+
   <div id="failureModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal panel">
       <p class="eyebrow">Termination Notice</p>
@@ -131,6 +149,15 @@
     </div>
   </div>
 
+  <div id="tutorialCompleteModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel tutorial-complete-modal">
+      <p class="eyebrow">Training Complete</p>
+      <h2>入职培训完成</h2>
+      <p class="task-text">你已经完成了入职培训。现在开始，你要完成公司派发给你的任务；如果在给定决策点内无法完成，你就会被开除。</p>
+      <button id="closeTutorialCompleteButton" class="primary-button">开始接任务</button>
+    </div>
+  </div>
+
   <div id="skillWorkerModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal panel">
       <p class="eyebrow">Skill Exchange</p>
@@ -150,6 +177,8 @@
       <button id="cancelTransferButton" class="secondary-button">取消</button>
     </div>
   </div>
+
+  <div id="toast" class="toast hidden" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
