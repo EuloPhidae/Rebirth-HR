@@ -787,6 +787,10 @@ h2 {
   100% { box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08); }
 }
 
+#stashPanel.tutorial-flash {
+  animation: task-flash 1.2s ease-in-out infinite;
+}
+
 .pool-button.active {
   background: linear-gradient(180deg, #2f68af, var(--accent));
   color: #f8fbff;

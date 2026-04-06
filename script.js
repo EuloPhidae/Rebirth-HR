@@ -8,7 +8,7 @@ const STARTING_COMPANY_FUNDS = 4;
 const SKILL_WORKER_COST = 30;
 const SKILL_WORKER_EXCHANGE_TOKEN = 6;
 const KPI_TO_ACTION_COST = 10;
-const SPECIALIZATION_UNLOCK_AFTER_TASKS = 5;
+const SPECIALIZATION_UNLOCK_AFTER_TASKS = 2;
 const TRANSFER_COST = 1;
 const POOL_COOLDOWN_MS = 200;
 const gsapApi = window.gsap ?? null;
@@ -108,6 +108,36 @@ const FREEPLAY_TASKS = [
   { id: "task-4", decisionPoints: 6, rewardKpi: 12, objective: { type: "talent_level_count", level: 2, count: 2 } }
 ];
 
+const BUSINESS_TRAINING_TASKS = [
+  {
+    id: "business-1",
+    decisionPoints: 1,
+    title: "业务培训 1",
+    description: "暂存区已有一个 Lv.1 人才库。点击它自动部署到棋盘空格。再获得一个 Lv.1 人才库并进行合成，生成一个 Lv.2 人才库后提交。",
+    rewardText: "奖励：学会特殊人才合成",
+    rewardKpi: 12,
+    objective: { type: "merge_infp_count", count: 1 }
+  },
+  {
+    id: "business-2",
+    decisionPoints: 3,
+    title: "业务培训 2",
+    description: "前两次点击人才库发射器，发射出两名特殊 INFP 人才。INFP 无法和不带属性的人才合成，只能和 INFP 同级合成。合成这个 INFP 人才后提交。",
+    rewardText: "奖励：理解 INFP 属性",
+    rewardKpi: 12,
+    objective: { type: "merge_infp_count", count: 1 }
+  },
+  {
+    id: "business-3",
+    decisionPoints: 1,
+    title: "业务培训 3",
+    description: "点击技能商店，使用 KPI 兑换一个行动点。完成兑换后提交。",
+    rewardText: "奖励：理解资源兑换",
+    rewardKpi: 12,
+    objective: { type: "exchange_action", count: 1 }
+  }
+];
+
 Object.assign(TUTORIAL_TASKS[1], {
   description: "点击棋盘中的人才库，消耗 1 点决策点，招募 1 名实习生，然后提交。"
 });
@@ -133,6 +163,9 @@ const state = {
   completedFreeplayTasks: 0,
   freeplayTaskIndex: 1,
   specializationUnlocked: false,
+  businessTrainingIndex: 0,
+  businessTrainingComplete: false,
+  totalExchanged: 0,
   pendingSkillWorkerIndex: null,
   pendingTransferIndex: null
 };
@@ -546,8 +579,9 @@ function getEntityCardInnerMarkup(entity) {
   const meta = getEntityVisualMeta(entity);
   const isPoolDisabled = entity.type === "pool" && state.decisionPoints <= 0;
   const disabledIcon = isPoolDisabled ? "🚫" : "";
+  const attrIcon = entity.attribute === "INFP" ? "🦋" : "";
   return `
-    <div class="talent-icon">${meta.icon}${disabledIcon}</div>
+    <div class="talent-icon">${attrIcon}${meta.icon}${disabledIcon}</div>
     <div class="talent-name">${meta.name}</div>
     <div class="talent-level">Lv.${entity.level}</div>
   `;
@@ -1010,9 +1044,10 @@ function getEntityVisualMeta(entity) {
   if (entity.type === "talent") {
     const baseMeta = ENTITY_META.talent[entity.level];
     const roleIcon = entity.role ? ROLE_ICONS[entity.role] : null;
+    const attrText = entity.attribute ? ` [${entity.attribute}]` : "";
     return {
       ...baseMeta,
-      name: getTalentDisplayName(entity.level, entity.role),
+      name: getTalentDisplayName(entity.level, entity.role) + attrText,
       icon: roleIcon || baseMeta.icon
     };
   }
@@ -1020,9 +1055,10 @@ function getEntityVisualMeta(entity) {
   if (entity.type === "pool") {
     const baseMeta = ENTITY_META.pool[entity.level];
     const roleIcon = entity.role ? ROLE_ICONS[entity.role] : null;
+    const attrText = entity.attribute ? ` [${entity.attribute}]` : "";
     return {
       ...baseMeta,
-      name: entity.role ? `${entity.role}人才库` : baseMeta.name,
+      name: (entity.role ? `${entity.role}人才库` : baseMeta.name) + attrText,
       icon: roleIcon || baseMeta.icon
     };
   }
@@ -1054,6 +1090,28 @@ function getTaskProgress(task = state.currentTask) {
 
   if (objective.type === "distill_count") {
     return state.totalDistilled;
+  }
+  
+  if (objective.type === "merge_infp_count") {
+    if (task.id === "business-1") {
+      const lv2Entities = state.grid.filter((entity) => {
+        if (!entity) return false;
+        if (entity.type === "pool" && entity.level >= 2) return true;
+        if (entity.type === "talent" && entity.level >= 2) return true;
+        return false;
+      });
+      return lv2Entities.length > 0 ? 1 : 0;
+    }
+    if (task.id === "business-2") {
+      const infpTalents = state.grid.filter((entity) => entity?.type === "talent" && entity.attribute === "INFP");
+      const infpAtMaxLevel = infpTalents.some((entity) => entity.level >= 2);
+      return infpAtMaxLevel ? 1 : 0;
+    }
+    return 0;
+  }
+
+  if (objective.type === "exchange_action") {
+    return state.totalExchanged;
   }
 
   return 0;
@@ -1214,10 +1272,37 @@ function submitCurrentTask() {
   state.kpi += state.currentTask.rewardKpi;
   addLog(`需求提交成功，KPI +${state.currentTask.rewardKpi}。`);
   state.completedFreeplayTasks += 1;
-  if (!state.specializationUnlocked && state.completedFreeplayTasks >= SPECIALIZATION_UNLOCK_AFTER_TASKS) {
-    unlockSpecializationSystem();
+  
+  if (!state.specializationUnlocked && !state.businessTrainingComplete && state.completedFreeplayTasks >= SPECIALIZATION_UNLOCK_AFTER_TASKS) {
+    if (!state.currentTask.id.startsWith("business-")) {
+      state.currentTask = { ...BUSINESS_TRAINING_TASKS[0] };
+      state.decisionPoints = state.currentTask.decisionPoints;
+      state.businessRecruitCount = 0;
+      state.totalExchanged = 0;
+      state.stash.push(createEntity("pool", 1));
+      render();
+      return;
+    }
   }
-  assignFreeplayTask();
+  
+  if (state.businessTrainingIndex >= BUSINESS_TRAINING_TASKS.length) {
+    state.businessTrainingComplete = true;
+    assignFreeplayTask();
+  } else if (!state.businessTrainingComplete && state.currentTask.id.startsWith("business-")) {
+    state.businessTrainingIndex += 1;
+    if (state.businessTrainingIndex >= BUSINESS_TRAINING_TASKS.length) {
+      state.businessTrainingComplete = true;
+      addLog("业务培训全部完成！");
+      assignFreeplayTask();
+    } else {
+      state.currentTask = { ...BUSINESS_TRAINING_TASKS[state.businessTrainingIndex] };
+      state.decisionPoints = state.currentTask.decisionPoints;
+      state.businessRecruitCount = 0;
+      state.totalExchanged = 0;
+    }
+  } else {
+    assignFreeplayTask();
+  }
   render();
 }
 
@@ -1339,6 +1424,7 @@ const SHOP_ITEMS = [
       }
       state.kpi -= KPI_TO_ACTION_COST;
       state.decisionPoints += 1;
+      state.totalExchanged += 1;
       addLog(`你牺牲了 ${KPI_TO_ACTION_COST} KPI，换得 1 个行动点。`);
       render();
     }
@@ -1391,10 +1477,25 @@ function recruitFromPool(poolIndex) {
 
   const level = randomFromWeighted(POOL_WEIGHTS[entity.level]);
   const role = state.specializationUnlocked ? (entity.role || "行政") : undefined;
-  state.grid[spawnIndex] = createEntity("talent", level, role ? { role } : {});
+  
+  let talentExtra = role ? { role } : {};
+  let talentLevel = level;
+  
+  const isBusiness2Task = state.currentTask?.id === "business-2";
+  if (isBusiness2Task && state.businessRecruitCount < 2) {
+    talentExtra.attribute = "INFP";
+    talentLevel = 1;
+    state.businessRecruitCount = (state.businessRecruitCount || 0) + 1;
+  } else if (state.businessTrainingComplete && Math.random() < 0.2) {
+    talentExtra.attribute = "INFP";
+  }
+  
+  state.grid[spawnIndex] = createEntity("talent", talentLevel, talentExtra);
   state.incomingCells.add(spawnIndex);
   setPoolCooldown(poolIndex);
-  addLog(`人才库 Lv.${entity.level} 招募到 ${getTalentDisplayName(level, role)}。`);
+  
+  const attrText = talentExtra.attribute ? ` [${talentExtra.attribute}]` : "";
+  addLog(`人才库 Lv.${entity.level} 招募到 ${getTalentDisplayName(talentLevel, role)}${attrText}。`);
 
   playRecruitSound();
   render();
@@ -1413,6 +1514,9 @@ function canMergeEntities(source, target) {
     return false;
   }
   if (source.type === "pool" && state.specializationUnlocked && (source.role || "行政") !== (target.role || "行政")) {
+    return false;
+  }
+  if (source.attribute !== target.attribute) {
     return false;
   }
   return true;
@@ -1507,7 +1611,10 @@ function mergeEntities(fromIndex, toIndex) {
   }
 
   const nextLevel = source.level + 1;
-  const extra = source.type === "talent" && source.role ? { role: source.role } : {};
+  let extra = source.type === "talent" && source.role ? { role: source.role } : {};
+  if (source.type === "talent" && source.attribute) {
+    extra.attribute = source.attribute;
+  }
   const poolExtra = source.type === "pool" && source.role ? { role: source.role } : {};
   state.grid[fromIndex] = null;
   state.grid[toIndex] = createEntity(source.type, nextLevel, source.type === "pool" ? poolExtra : extra);
@@ -1517,7 +1624,8 @@ function mergeEntities(fromIndex, toIndex) {
   } else if (source.type === "skillWorker") {
     addLog(`员工.Skill 合成成功，获得 Lv.${nextLevel}。`);
   } else {
-    addLog(`合成成功，获得 ${getTalentDisplayName(nextLevel, source.role)}。`);
+    const attrText = extra.attribute ? ` [${extra.attribute}]` : "";
+    addLog(`合成成功，获得 ${getTalentDisplayName(nextLevel, source.role)}${attrText}。`);
     maybeSpawnBubble(nextLevel);
   }
 
@@ -1924,7 +2032,10 @@ function renderTask() {
     return;
   }
 
-  taskPanelEl.classList.toggle("tutorial-flash", !state.tutorialComplete && state.currentTask.id.startsWith("tutorial-"));
+  taskPanelEl.classList.toggle("tutorial-flash",
+    (!state.tutorialComplete && state.currentTask.id.startsWith("tutorial-")) ||
+    (!state.businessTrainingComplete && state.currentTask.id.startsWith("business-"))
+  );
 
   const objective = state.currentTask.objective;
   const levelIcon = TALENT_META[objective.level]?.icon || "";
@@ -1933,12 +2044,15 @@ function renderTask() {
   
   const remainingTutorials = TUTORIAL_TASKS.length - state.tutorialIndex;
   const totalFreeplayTasks = FREEPLAY_TASKS.length;
-  taskSubtitleEl.textContent =
-    !state.tutorialComplete && state.currentTask.id.startsWith("tutorial-")
-      ? `入职培训 · ${state.currentTask.title}（剩余 ${remainingTutorials} 关）`
-      : state.tutorialComplete
-        ? `自由任务 · 第 ${state.freeplayTaskIndex || 1} / ${totalFreeplayTasks} 关`
-        : "";
+  const remainingBusiness = BUSINESS_TRAINING_TASKS.length - state.businessTrainingIndex;
+  
+  if (!state.tutorialComplete && state.currentTask.id.startsWith("tutorial-")) {
+    taskSubtitleEl.textContent = `入职培训 · ${state.currentTask.title}（剩余 ${remainingTutorials} 关）`;
+  } else if (!state.businessTrainingComplete && state.currentTask.id.startsWith("business-")) {
+    taskSubtitleEl.textContent = `业务培训 · ${state.currentTask.title}（剩余 ${remainingBusiness} 关）`;
+  } else {
+    taskSubtitleEl.textContent = `自由任务 · 第 ${state.freeplayTaskIndex || 1} / ${totalFreeplayTasks} 关`;
+  }
   taskDescriptionEl.textContent = state.currentTask.description;
   taskTargetEl.textContent = `任务进度：${getTaskProgress()} / ${objective.count}${iconText ? ` ${iconText}` : ""}`;
   taskRewardEl.textContent = getCurrentTaskRewardText();
@@ -1949,7 +2063,11 @@ function renderTask() {
 
 function renderStash() {
   stashCountLabelEl.textContent = `${state.stash.length} 个`;
+  const shouldFlash = (state.stash.length > 0) &&
+    ((!state.tutorialComplete && state.currentTask?.id.startsWith("tutorial-")) ||
+     (!state.businessTrainingComplete && state.currentTask?.id.startsWith("business-")));
   stashPanelEl.classList.toggle("stash-pending", state.stash.length > 0);
+  stashPanelEl.classList.toggle("tutorial-flash", shouldFlash);
   stashListEl.innerHTML = "";
   if (state.stash.length === 0) {
     stashListEl.innerHTML = `<div class="stash-item-empty">暂无待部署资产。</div>`;
@@ -2064,6 +2182,14 @@ function render() {
   renderShop();
   renderBubbles();
   renderDistillPanel();
+
+  const isBusiness3 = state.currentTask && state.currentTask.id === "business-3";
+  const showShop = isBusiness3 || state.businessTrainingComplete;
+  if (showShop) {
+    openShopButtonEl.classList.remove("hidden");
+  } else {
+    openShopButtonEl.classList.add("hidden");
+  }
 }
 
 function renderDistillPanel() {
@@ -2096,6 +2222,10 @@ function restartGame() {
   state.completedFreeplayTasks = 0;
   state.freeplayTaskIndex = 1;
   state.specializationUnlocked = false;
+  state.businessTrainingIndex = 0;
+  state.businessTrainingComplete = false;
+  state.businessRecruitCount = 0;
+  state.totalExchanged = 0;
   state.pendingSkillWorkerIndex = null;
   state.pendingTransferIndex = null;
   state.incomingCells = new Set();
