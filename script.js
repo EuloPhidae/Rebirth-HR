@@ -10,7 +10,7 @@ const SKILL_WORKER_EXCHANGE_TOKEN = 6;
 const KPI_TO_ACTION_COST = 10;
 const SPECIALIZATION_UNLOCK_AFTER_TASKS = 5;
 const TRANSFER_COST = 1;
-const POOL_COOLDOWN_MS = 300;
+const POOL_COOLDOWN_MS = 200;
 const gsapApi = window.gsap ?? null;
 const interactApi = window.interact ?? null;
 const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -55,13 +55,6 @@ const ENTITY_META = {
     3: { name: "员工.Skill", icon: "✦", colorClass: "rarity-5" },
     4: { name: "员工.Skill", icon: "✦", colorClass: "rarity-5" },
     5: { name: "员工.Skill", icon: "✦", colorClass: "rarity-5" }
-  },
-  lockedTalent: {
-    1: { name: "积灰人才", icon: "🔒", colorClass: "entity-locked" },
-    2: { name: "积灰人才", icon: "🔒", colorClass: "entity-locked" },
-    3: { name: "积灰人才", icon: "🔒", colorClass: "entity-locked" },
-    4: { name: "积灰人才", icon: "🔒", colorClass: "entity-locked" },
-    5: { name: "积灰人才", icon: "🔒", colorClass: "entity-locked" }
   }
 };
 
@@ -99,14 +92,6 @@ const TUTORIAL_TASKS = [
     objective: { type: "talent_level_count", level: 2, count: 1 }
   },
   {
-    id: "tutorial-4",
-    decisionPoints: 1,
-    title: "入职培训 4",
-    description: "把一个可活动的☕实习生拖到被积灰的☕实习生上，完成解锁并合成后提交。",
-    rewardText: "奖励：学会解锁格子",
-    objective: { type: "unlock_count", count: 1 }
-  },
-  {
     id: "tutorial-5",
     decisionPoints: 1,
     title: "入职培训 5",
@@ -128,9 +113,6 @@ Object.assign(TUTORIAL_TASKS[1], {
 });
 Object.assign(TUTORIAL_TASKS[2], {
   description: "再点击两次人才库，获得两名实习生。将他们合成为 1 名应届生后提交。"
-});
-Object.assign(TUTORIAL_TASKS[3], {
-  description: "把一个可活动的实习生拖到被封锁的实习生上，完成解锁并合成后提交。"
 });
 
 const state = {
@@ -206,7 +188,7 @@ const storyRewardEl = document.querySelector("#storyReward");
 const closeStoryButtonEl = document.querySelector("#closeStoryButton");
 const toastEl = document.querySelector("#toast");
 const winAudio = new Audio("win.mp3");
-const mergeAudio = new Audio("creatorshome-pop-cartoon-328167.mp3");
+const mergeAudio = new Audio("linhmitto-bubblepop-254773.mp3");
 
 let pendingDistillEntity = null;
 let pendingDistillIndex = null;
@@ -410,12 +392,7 @@ function getSkillWorkerExchangeFunds(level) {
 }
 
 function createInitialGrid() {
-  const grid = Array.from({ length: BOARD_SIZE }, () =>
-    createEntity("lockedTalent", Math.ceil(Math.random() * MAX_LEVEL))
-  );
-  [20, 21, 26, 27].forEach((index) => {
-    grid[index] = null;
-  });
+  const grid = Array.from({ length: BOARD_SIZE }, () => null);
   return grid;
 }
 
@@ -638,32 +615,77 @@ function animateCell(index, className = "merge-pop") {
                 scale: 1.015,
                 y: -1,
                 opacity: 1,
-                duration: 0.16,
+                duration: 0.11,
                 ease: "power2.out"
               })
               .to(card, {
                 scale: 0.996,
                 y: 0.5,
-                duration: 0.07,
+                duration: 0.0225,
                 ease: "sine.inOut"
               })
               .to(card, {
                 scale: 1,
                 y: 0,
-                duration: 0.07,
+                duration: 0.0225,
                 ease: "sine.out"
               });
             return true;
           })()
         : className === "pool-idle-prompt"
-          ? animateWithGsap(card, { scale: 1 }, {
-              scale: 1.035,
-              duration: 0.18,
-              yoyo: true,
-              repeat: 1,
-              ease: "power1.inOut",
-              clearProps: "transform"
-            })
+          ? (() => {
+              if (!gsapApi || prefersReducedMotion) {
+                return false;
+              }
+              gsapApi.killTweensOf(card);
+              const tl = gsapApi.timeline({ repeat: -1 });
+              tl.to(card, {
+                scale: 1.04,
+                duration: 0.12,
+                ease: "sine.inOut"
+              })
+              .to(card, {
+                scale: 1.08,
+                duration: 0.1,
+                ease: "sine.inOut"
+              })
+              .to(card, {
+                scale: 1.04,
+                duration: 0.1,
+                ease: "sine.inOut"
+              })
+              .to(card, {
+                scale: 1,
+                duration: 0.12,
+                ease: "sine.inOut"
+              })
+              .to(card, {
+                scale: 1.04,
+                duration: 0.12,
+                ease: "sine.inOut"
+              })
+              .to(card, {
+                scale: 1.08,
+                duration: 0.1,
+                ease: "sine.inOut"
+              })
+              .to(card, {
+                scale: 1.04,
+                duration: 0.1,
+                ease: "sine.inOut"
+              })
+              .to(card, {
+                scale: 1,
+                duration: 0.12,
+                ease: "sine.inOut"
+              })
+              .to(card, {
+                scale: 1,
+                duration: 1.2,
+                ease: "sine.inOut"
+              });
+              return true;
+            })()
           : animateWithGsap(card, { scale: 0.82, y: 8 }, {
               scale: 1,
               y: 0,
@@ -903,10 +925,6 @@ function closeDistillStoryModal() {
   pendingDistillIndex = null;
 }
 
-function isLockedTalent(entity) {
-  return entity?.type === "lockedTalent";
-}
-
 function isSelectedTalent() {
   return state.selectedCell !== null && state.grid[state.selectedCell]?.type === "talent";
 }
@@ -936,16 +954,6 @@ function getEntityVisualMeta(entity) {
     };
   }
 
-  if (entity.type === "lockedTalent") {
-    const baseMeta = ENTITY_META.lockedTalent[entity.level];
-    const roleIcon = entity.role ? ROLE_ICONS[entity.role] : null;
-    return {
-      ...baseMeta,
-      name: `积灰${getTalentDisplayName(entity.level, entity.role)}`,
-      icon: roleIcon || TALENT_META[entity.level].icon
-    };
-  }
-
   return ENTITY_META[entity.type][entity.level];
 }
 
@@ -969,10 +977,6 @@ function getTaskProgress(task = state.currentTask) {
       }
       return entity.role === objective.role;
     }).length;
-  }
-
-  if (objective.type === "unlock_count") {
-    return state.totalUnlockedCells;
   }
 
   if (objective.type === "distill_count") {
@@ -1039,7 +1043,7 @@ function assignRolesToExistingBoardTalents() {
     if (!entity) {
       return null;
     }
-    if ((entity.type === "talent" || entity.type === "lockedTalent") && !entity.role) {
+    if (entity.type === "talent" && !entity.role) {
       return { ...entity, role: getRandomJobFunction() };
     }
     return entity;
@@ -1423,10 +1427,7 @@ function getMergeHintIndices() {
         continue;
       }
 
-      if (canMergeEntities(source, target) || (isLockedTalent(target) && canMergeEntities(source, target))) {
-        pairs.push([fromIndex, toIndex]);
-      }
-      if (isLockedTalent(source) && canMergeEntities(target, source)) {
+      if (canMergeEntities(source, target)) {
         pairs.push([fromIndex, toIndex]);
       }
     }
@@ -1522,36 +1523,6 @@ function mergeEntities(fromIndex, toIndex) {
   return true;
 }
 
-function unlockLockedCell(fromIndex, toIndex) {
-  const source = state.grid[fromIndex];
-  const target = state.grid[toIndex];
-  if (!source || !target || source.type !== "talent" || target.type !== "lockedTalent") {
-    return false;
-  }
-  if (source.level !== target.level || source.level >= MAX_LEVEL) {
-    addLog("积灰格只接受同等级人才来解锁。", "warning");
-    return false;
-  }
-  if (state.specializationUnlocked && source.role !== target.role) {
-    addLog("积灰格在第二阶段也需要同职能人才来解锁。", "warning");
-    return false;
-  }
-
-  const nextLevel = source.level + 1;
-  const extra = source.role ? { role: source.role } : {};
-  state.grid[fromIndex] = null;
-  state.grid[toIndex] = createEntity("talent", nextLevel, extra);
-  state.totalUnlockedCells += 1;
-  state.selectedCell = toIndex;
-  addLog(`积灰格已解锁，并合成出 ${getTalentDisplayName(nextLevel, source.role)}。`);
-  
-  playMergeSound();
-  render();
-  animateCell(toIndex);
-  maybeSpawnBubble(nextLevel);
-  return true;
-}
-
 function moveEntity(fromIndex, toIndex) {
   state.grid[toIndex] = state.grid[fromIndex];
   state.grid[fromIndex] = null;
@@ -1629,11 +1600,6 @@ function handleCellClick(index) {
     return;
   }
 
-  if (isLockedTalent(entity)) {
-    addLog(`这里是 ${getEntityVisualMeta(entity).name}，需要拖入同等级员工来解锁。`);
-    return;
-  }
-
   if (entity.type === "pool") {
     recruitFromPool(index);
     return;
@@ -1672,7 +1638,8 @@ function handleBoardDrop(rawData, toIndex) {
     addLog(`${getEntityVisualMeta(state.grid[toIndex]).name} 已部署进棋盘。`);
     
     render();
-    animateCell(toIndex);
+    const isPool = state.grid[toIndex]?.type === "pool";
+    animateCell(toIndex, isPool ? "pool-spawn" : "merge-pop");
     return;
   }
 
@@ -1687,10 +1654,6 @@ function handleBoardDrop(rawData, toIndex) {
 
   if (!state.grid[toIndex]) {
     moveEntity(fromIndex, toIndex);
-    return;
-  }
-  if (isLockedTalent(state.grid[toIndex])) {
-    unlockLockedCell(fromIndex, toIndex);
     return;
   }
   mergeEntities(fromIndex, toIndex);
@@ -1892,7 +1855,7 @@ function renderBoard() {
 
     if (visibleEntity) {
       const card = document.createElement("div");
-      const isMovable = visibleEntity.type !== "lockedTalent";
+      const isMovable = true;
       const meta = getEntityVisualMeta(visibleEntity);
       const cooldownProgress = visibleEntity.type === "pool" ? getPoolCooldownProgress(index) : 0;
       card.className = `talent-card ${meta.colorClass} ${visibleEntity.type === "skillWorker" ? "skill-worker-card" : ""} ${isMovable && interactApi ? "js-draggable" : ""} ${isMergeHint ? "merge-hint-card" : ""}`;
@@ -2094,6 +2057,10 @@ function restartGame() {
   state.mergeHintCells = new Set();
   state.lastInteractionAt = Date.now();
   state.poolCooldowns = new Map();
+
+  if (!state.tutorialComplete && state.tutorialIndex === 0) {
+    state.stash.push(createEntity("pool", 1));
+  }
 
   assignTutorialTask();
   showFailureModal(false);
