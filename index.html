@@ -53,7 +53,7 @@
           <div id="stashList" class="stash-list"></div>
         </section>
 
-        <section class="panel task-panel">
+        <section id="taskPanel" class="panel task-panel">
           <div class="panel-title-row">
             <h2>任务单</h2>
           </div>
@@ -76,14 +76,16 @@
           </div>
         </section>
 
-        <section class="panel pool-panel hidden" id="poolStorePanel" aria-hidden="true">
+        <section id="quitPanel" class="panel quit-panel">
           <div class="panel-title-row">
-            <h2>人才库采购</h2>
-            <span>第二阶段</span>
+            <h2>离职</h2>
           </div>
-          <div id="poolStoreList" class="shop-list"></div>
-          <p class="small-text">第二阶段开启后，不同职能的人才库会在这里单独采购。</p>
+          <p class="quit-hint">当你觉得已经无法完成任务时</p>
+          <p class="quit-hint">主动承认你的错误离职</p>
+          <p class="quit-hint quit-final">对这一切都是你能力不足</p>
+          <button id="quitGameButton" class="danger-button">申请离职</button>
         </section>
+
       </aside>
     </main>
   </div>
@@ -109,12 +111,12 @@
   <div id="distillStoryModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal panel distill-story-modal">
       <div class="story-dialog">
-        <div class="story-speaker" id="storySpeaker">员工</div>
+        <div class="story-speaker" id="storySpeaker">👤 员工</div>
         <div class="story-text" id="storyText"></div>
       </div>
       <div class="story-choices" id="storyChoices"></div>
       <div class="story-result hidden" id="storyResult">
-        <div class="story-speaker">神秘领导</div>
+        <div class="story-speaker">🎭 神秘领导</div>
         <div class="story-text" id="storyResultText"></div>
         <div class="story-reward" id="storyReward"></div>
       </div>
@@ -154,7 +156,7 @@
       <p class="eyebrow">Training Complete</p>
       <h2>入职培训完成</h2>
       <p class="task-text">你已经完成了入职培训。现在开始，你要完成公司派发给你的任务；如果在给定决策点内无法完成，你就会被开除。</p>
-      <button id="closeTutorialCompleteButton" class="primary-button">开始接任务</button>
+      <button id="closeTutorialCompleteButton" class="primary-button">正式入职</button>
     </div>
   </div>
 

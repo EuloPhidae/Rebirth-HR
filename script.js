@@ -102,9 +102,9 @@ const TUTORIAL_TASKS = [
 ];
 
 const FREEPLAY_TASKS = [
-  { id: "task-1", decisionPoints: 5, rewardKpi: 10, objective: { type: "talent_level_count", level: 3, count: 2 } },
-  { id: "task-2", decisionPoints: 5, rewardKpi: 14, objective: { type: "talent_level_count", level: 4, count: 1 } },
-  { id: "task-3", decisionPoints: 7, rewardKpi: 20, objective: { type: "talent_level_count", level: 5, count: 1 } },
+  { id: "task-1", decisionPoints: 8, rewardKpi: 10, objective: { type: "talent_level_count", level: 3, count: 2 } },
+  { id: "task-2", decisionPoints: 12, rewardKpi: 14, objective: { type: "talent_level_count", level: 4, count: 1 } },
+  { id: "task-3", decisionPoints: 16, rewardKpi: 20, objective: { type: "talent_level_count", level: 5, count: 1 } },
   { id: "task-4", decisionPoints: 6, rewardKpi: 12, objective: { type: "talent_level_count", level: 2, count: 2 } }
 ];
 
@@ -131,6 +131,7 @@ const state = {
   totalUnlockedCells: 0,
   totalDistilled: 0,
   completedFreeplayTasks: 0,
+  freeplayTaskIndex: 1,
   specializationUnlocked: false,
   pendingSkillWorkerIndex: null,
   pendingTransferIndex: null
@@ -152,6 +153,7 @@ const taskDescriptionEl = document.querySelector("#taskDescription");
 const taskTargetEl = document.querySelector("#taskTarget");
 const taskRewardEl = document.querySelector("#taskReward");
 const submitTaskButtonEl = document.querySelector("#submitTaskButton");
+const taskPanelEl = document.querySelector("#taskPanel");
 const stashCountLabelEl = document.querySelector("#stashCountLabel");
 const stashListEl = document.querySelector("#stashList");
 const stashPanelEl = document.querySelector("#stashPanel");
@@ -159,6 +161,7 @@ const poolStorePanelEl = document.querySelector("#poolStorePanel");
 const poolStoreListEl = document.querySelector("#poolStoreList");
 const shopListEl = document.querySelector("#shopList");
 const failureModalEl = document.querySelector("#failureModal");
+const quitGameButtonEl = document.querySelector("#quitGameButton");
 const restartGameButtonEl = document.querySelector("#restartGameButton");
 const introModalEl = document.querySelector("#introModal");
 const startGameButtonEl = document.querySelector("#startGameButton");
@@ -180,6 +183,7 @@ const closeShopButtonEl = document.querySelector("#closeShopButton");
 const distillDropZoneEl = document.querySelector("#distillDropZone");
 const distillStoryModalEl = document.querySelector("#distillStoryModal");
 const storySpeakerEl = document.querySelector("#storySpeaker");
+const storyDialogEl = document.querySelector(".story-dialog");
 const storyTextEl = document.querySelector("#storyText");
 const storyChoicesEl = document.querySelector("#storyChoices");
 const storyResultEl = document.querySelector("#storyResult");
@@ -189,6 +193,19 @@ const closeStoryButtonEl = document.querySelector("#closeStoryButton");
 const toastEl = document.querySelector("#toast");
 const winAudio = new Audio("win.mp3");
 const mergeAudio = new Audio("linhmitto-bubblepop-254773.mp3");
+const recruitAudio = new Audio("dragon-studio-bubble-pop-406640.mp3");
+const clickAudio = new Audio("creatorshome-low-pop-368761.mp3");
+
+function playClickSound() {
+  clickAudio.currentTime = 0;
+  clickAudio.volume = 0.5;
+  clickAudio.play().catch(() => {});
+}
+
+function playRecruitSound() {
+  recruitAudio.currentTime = 0;
+  recruitAudio.play().catch(() => {});
+}
 
 let pendingDistillEntity = null;
 let pendingDistillIndex = null;
@@ -216,6 +233,16 @@ const DISTILL_STORIES = {
     "我老婆刚生二胎，奶粉钱都靠这份工资啊。",
     "我上有老下有小，全家都指望我这份收入。",
     "我知道最近表现不好，但我会改的，真的会改的。"
+  ],
+  leaderInstructions: [
+    "这个员工已经不符合我们的需求了。你来负责处理这个情况。",
+    "公司需要优化人力成本，这个员工需要被裁员。你来执行。",
+    "这个人的绩效一直不达标，是时候让他离开了。",
+    "我们已经讨论过了，这个职位要被撤销。你负责处理后续。",
+    "这个员工的存在影响了团队效率，你需要让他离开。",
+    "经过评估，这位员工的表现未能达到公司标准。",
+    "公司发展方向调整，这个岗位不再需要人了。",
+    "这个员工的能力与我们的要求不符，你来安排一下。"
   ],
   choices: [
     {
@@ -274,38 +301,51 @@ restartGameButtonEl.addEventListener("click", () => {
   restartGame();
 });
 
+quitGameButtonEl.addEventListener("click", () => {
+  playClickSound();
+  showFailureModal(true);
+});
+
 startGameButtonEl.addEventListener("click", () => {
+  playClickSound();
   introModalEl.classList.add("hidden");
   introModalEl.setAttribute("aria-hidden", "true");
   render();
 });
 
 closeSpecializationButtonEl.addEventListener("click", () => {
+  playClickSound();
   showSpecializationModal(false);
 });
 
 closeTutorialCompleteButtonEl.addEventListener("click", () => {
+  playClickSound();
   showTutorialCompleteModal(false);
 });
 
 cancelSkillWorkerButtonEl.addEventListener("click", () => {
+  playClickSound();
   closeSkillWorkerModal();
 });
 
 confirmSkillWorkerButtonEl.addEventListener("click", () => {
+  playClickSound();
   confirmSkillWorkerExchange();
 });
 
 cancelTransferButtonEl.addEventListener("click", () => {
+  playClickSound();
   closeTransferModal();
 });
 
 openShopButtonEl.addEventListener("click", () => {
+  playClickSound();
   shopModalEl.classList.remove("hidden");
   shopModalEl.setAttribute("aria-hidden", "false");
 });
 
 closeShopButtonEl.addEventListener("click", () => {
+  playClickSound();
   shopModalEl.classList.add("hidden");
   shopModalEl.setAttribute("aria-hidden", "true");
 });
@@ -322,11 +362,13 @@ document.addEventListener("pointerdown", () => {
 }, true);
 
 closeStoryButtonEl.addEventListener("click", () => {
+  playClickSound();
   closeDistillStoryModal();
 });
 
 distillStoryModalEl.addEventListener("click", (event) => {
   if (event.target === distillStoryModalEl && !storyResultEl.classList.contains("hidden")) {
+    playClickSound();
     closeDistillStoryModal();
   }
 });
@@ -407,7 +449,12 @@ function getDistance(aIndex, bIndex) {
 }
 
 function getEmptyIndices() {
-  return state.grid.map((entity, index) => (entity ? -1 : index)).filter((index) => index !== -1);
+  const activeIndices = state.tutorialComplete
+    ? [3, 4, 5, 9, 10, 11, 15, 16, 17]
+    : [4, 5, 10, 11];
+  return state.grid
+    .map((entity, index) => (entity ? -1 : index))
+    .filter((index) => index !== -1 && activeIndices.includes(index));
 }
 
 function getNearestEmptyIndexToIndex(originIndex) {
@@ -491,13 +538,16 @@ function showToast(message, type = "info") {
 }
 
 function getFirstEmptyIndex() {
-  return state.grid.findIndex((entity) => !entity);
+  const empties = getEmptyIndices();
+  return empties.length > 0 ? empties[0] : -1;
 }
 
 function getEntityCardInnerMarkup(entity) {
   const meta = getEntityVisualMeta(entity);
+  const isPoolDisabled = entity.type === "pool" && state.decisionPoints <= 0;
+  const disabledIcon = isPoolDisabled ? "🚫" : "";
   return `
-    <div class="talent-icon">${meta.icon}</div>
+    <div class="talent-icon">${meta.icon}${disabledIcon}</div>
     <div class="talent-name">${meta.name}</div>
     <div class="talent-level">Lv.${entity.level}</div>
   `;
@@ -574,6 +624,7 @@ function openTransferModal(index) {
     `;
     button.disabled = state.companyFunds < TRANSFER_COST || state.isGameOver;
     button.addEventListener("click", () => {
+      playClickSound();
       confirmTransferRole(role);
     });
     transferOptionsEl.append(button);
@@ -857,49 +908,56 @@ let pendingDistillSource = "board";
 function showDistillStoryModal(entity) {
   const displayName = getTalentDisplayName(entity.level, entity.role);
   const plea = randomFromList(DISTILL_STORIES.pleas);
-  
-  storySpeakerEl.textContent = displayName;
+
+  storySpeakerEl.textContent = `👤 ${displayName}`;
   storyTextEl.textContent = plea;
-  
+  storyDialogEl.classList.remove("hidden");
+
   storyChoicesEl.innerHTML = "";
   DISTILL_STORIES.choices.forEach((choice, index) => {
     const button = document.createElement("button");
     button.className = `story-choice choice-${choice.type}`;
     button.textContent = choice.text;
-    button.addEventListener("click", () => handleStoryChoice(choice, entity));
+    button.addEventListener("click", () => {
+      playClickSound();
+      handleStoryChoice(choice, entity);
+    });
     storyChoicesEl.appendChild(button);
   });
-  
+
   storyResultEl.classList.add("hidden");
   closeStoryButtonEl.classList.add("hidden");
-  
+
   distillStoryModalEl.classList.remove("hidden");
   distillStoryModalEl.setAttribute("aria-hidden", "false");
+  animateModalEntrance(distillStoryModalEl);
 }
 
 function handleStoryChoice(choice, entity) {
   const displayName = getTalentDisplayName(entity.level, entity.role);
   const leaderResponse = randomFromList(choice.leaderResponse);
-  
+
   if (choice.reward.kpi) {
     state.kpi += choice.reward.kpi;
   }
   if (choice.reward.funds) {
     state.companyFunds += choice.reward.funds;
   }
-  
+
   const tokenReward = getDecomposeReward(entity.level);
   state.tokens += tokenReward;
   state.totalDistilled += 1;
-  
+
   if (pendingDistillSource === "stash") {
     state.stash.splice(pendingDistillIndex, 1);
   } else {
     state.grid[pendingDistillIndex] = null;
   }
-  
+
+  storyDialogEl.classList.add("hidden");
+  storyChoicesEl.innerHTML = "";
   storyResultTextEl.textContent = leaderResponse;
-  
+
   let rewardText = `获得 ${tokenReward} Token`;
   if (choice.reward.kpi) {
     rewardText += `，${choice.reward.kpi > 0 ? "获得" : "扣除"} ${Math.abs(choice.reward.kpi)} KPI`;
@@ -908,8 +966,7 @@ function handleStoryChoice(choice, entity) {
     rewardText += `，${choice.reward.funds > 0 ? "获得" : "消耗"} ${Math.abs(choice.reward.funds)} 公司资金`;
   }
   storyRewardEl.textContent = rewardText;
-  
-  storyChoicesEl.innerHTML = "";
+
   storyResultEl.classList.remove("hidden");
   closeStoryButtonEl.classList.remove("hidden");
   
@@ -919,8 +976,24 @@ function handleStoryChoice(choice, entity) {
 }
 
 function closeDistillStoryModal() {
-  distillStoryModalEl.classList.add("hidden");
-  distillStoryModalEl.setAttribute("aria-hidden", "true");
+  const panel = distillStoryModalEl.querySelector(".modal");
+  animateWithGsap(panel, {
+    opacity: 0,
+    y: 16,
+    scale: 0.95
+  }, {
+    opacity: 0,
+    duration: 0.15,
+    ease: "power2.in",
+    onComplete: () => {
+      distillStoryModalEl.classList.add("hidden");
+      distillStoryModalEl.setAttribute("aria-hidden", "true");
+      panel.style.opacity = "";
+      panel.style.transform = "";
+      storyDialogEl.classList.remove("hidden");
+      storyChoicesEl.innerHTML = "";
+    }
+  });
   pendingDistillEntity = null;
   pendingDistillIndex = null;
 }
@@ -1035,6 +1108,7 @@ function buildFreeplayTask(baseTask) {
 function assignFreeplayTask() {
   state.currentTask = buildFreeplayTask(randomFromList(FREEPLAY_TASKS));
   state.decisionPoints = state.currentTask.decisionPoints;
+  state.freeplayTaskIndex += 1;
   clearSelection();
 }
 
@@ -1236,76 +1310,6 @@ function confirmTransferRole(role) {
 
 const SHOP_ITEMS = [
   {
-    id: "buy-pool",
-    name: "采购人才库",
-    costLabel: "1 决策点 + 1 资金",
-    description: "采购一个 1 级人才库，放入暂存区后点击即可自动部署到棋盘。",
-    isDisabled: () => state.specializationUnlocked || state.decisionPoints < 1 || state.companyFunds < 1 || state.isGameOver,
-    use: () => {
-      if (!spendDecisionPoint(1, "采购人才库")) {
-        render();
-        return;
-      }
-      if (!spendCompanyFunds(1, "采购人才库")) {
-        state.decisionPoints += 1;
-        render();
-        return;
-      }
-      state.stash.push(createEntity("pool", 1));
-      addLog("1 级人才库已加入暂存区。");
-      render();
-    }
-  },
-  {
-    id: "promote",
-    name: "内推",
-    costLabel: "1 决策点 + 1 资金",
-    description: "让当前选中的人才立即提升 1 级。",
-    isDisabled: () => !isSelectedTalentUpgradeable() || state.decisionPoints < 1 || state.companyFunds < 1 || state.isGameOver,
-    use: () => {
-      if (!isSelectedTalentUpgradeable()) {
-        return;
-      }
-      if (!spendDecisionPoint(1, "内推")) {
-        render();
-        return;
-      }
-      if (!spendCompanyFunds(1, "内推")) {
-        state.decisionPoints += 1;
-        render();
-        return;
-      }
-      const index = state.selectedCell;
-      const entity = state.grid[index];
-      state.grid[index] = createEntity("talent", entity.level + 1, entity.role ? { role: entity.role } : {});
-      addLog(`内推成功，${getTalentDisplayName(state.grid[index].level, state.grid[index].role)} 已到岗。`);
-      render();
-      animateCell(index);
-      maybeSpawnBubble(state.grid[index].level);
-    }
-  },
-  {
-    id: "distill",
-    name: "裁员并蒸馏",
-    costLabel: "选择员工",
-    description: "把当前选中的员工扔回人才库。把他的工作成果蒸馏成 Token。",
-    isDisabled: () => !isSelectedTalent() || state.isGameOver,
-    use: () => {
-      if (!isSelectedTalent()) {
-        return;
-      }
-      const index = state.selectedCell;
-      const entity = state.grid[index];
-      const reward = getDecomposeReward(entity.level);
-      state.tokens += reward;
-      state.totalDistilled += 1;
-      state.grid[index] = null;
-      clearSelection();
-      addLog(`蒸馏完成，${getTalentDisplayName(entity.level, entity.role)} 被转化为 ${reward} Token。`);
-      render();
-    }
-  },
-  {
     id: "buy-skill-worker",
     name: "员工.Skill",
     costLabel: `${SKILL_WORKER_COST} Token`,
@@ -1358,7 +1362,7 @@ const SPECIALIZED_POOL_ITEMS = JOB_FUNCTIONS.map((role) => ({
       return;
     }
     state.stash.push(createEntity("pool", 1, { role }));
-  addLog(`${role}人才库已加入暂存区，点击即可自动部署到棋盘并稳定生产对应职能人才。`);
+    addLog(`${role}人才库已加入暂存区，点击即可自动部署到棋盘并稳定生产对应职能人才。`);
     render();
   }
 }));
@@ -1391,7 +1395,8 @@ function recruitFromPool(poolIndex) {
   state.incomingCells.add(spawnIndex);
   setPoolCooldown(poolIndex);
   addLog(`人才库 Lv.${entity.level} 招募到 ${getTalentDisplayName(level, role)}。`);
-  
+
+  playRecruitSound();
   render();
   animateCell(poolIndex);
   animateRecruitFromPool(sourceRect, spawnIndex, state.grid[spawnIndex]);
@@ -1601,6 +1606,10 @@ function handleCellClick(index) {
   }
 
   if (entity.type === "pool") {
+    if (state.decisionPoints <= 0) {
+      addLog("决策点不足，无法继续招募。", "warning");
+      return;
+    }
     recruitFromPool(index);
     return;
   }
@@ -1621,6 +1630,14 @@ function handleBoardDrop(rawData, toIndex) {
   }
 
   if (state.incomingCells.has(toIndex)) {
+    return;
+  }
+
+  const activeIndices = state.tutorialComplete
+    ? [3, 4, 5, 9, 10, 11, 15, 16, 17]
+    : [4, 5, 10, 11];
+  if (!activeIndices.includes(toIndex)) {
+    addLog("该区域尚未解锁。", "warning");
     return;
   }
 
@@ -1649,6 +1666,11 @@ function handleBoardDrop(rawData, toIndex) {
 
   const fromIndex = Number(rawData.slice(5));
   if (fromIndex === toIndex || !state.grid[fromIndex]) {
+    return;
+  }
+
+  if (!activeIndices.includes(toIndex)) {
+    addLog("该区域尚未解锁。", "warning");
     return;
   }
 
@@ -1790,10 +1812,10 @@ function animateRecruitFromPool(sourceRect, toIndex, entity) {
     }, {
       x: deltaX,
       y: deltaY,
-      scale: 1.08,
+      scale: 1.02,
       opacity: 1,
       rotate: 0,
-      duration: 0.52,
+      duration: 0.25,
       ease: "back.out(1.45)",
       onComplete: () => {
         ghost.remove();
@@ -1803,15 +1825,15 @@ function animateRecruitFromPool(sourceRect, toIndex, entity) {
   } else {
     ghost.style.transform = "scale(0.28) rotate(-10deg)";
     ghost.style.opacity = "0.16";
-    ghost.style.transition = "transform 520ms cubic-bezier(0.22, 1.2, 0.36, 1), opacity 520ms ease";
+    ghost.style.transition = "transform 250ms cubic-bezier(0.22, 1.2, 0.36, 1), opacity 250ms ease";
     requestAnimationFrame(() => {
-      ghost.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.08) rotate(0deg)`;
+      ghost.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.02) rotate(0deg)`;
       ghost.style.opacity = "1";
     });
     window.setTimeout(() => {
       ghost.remove();
       revealRecruitedCard();
-    }, 540);
+    }, 270);
   }
 }
 
@@ -1822,12 +1844,19 @@ function getEntityLabel(entity) {
 
 function renderBoard() {
   boardEl.innerHTML = "";
+
+  const maxCells = state.tutorialComplete ? 9 : 4;
+  const activeIndices = state.tutorialComplete
+    ? [3, 4, 5, 9, 10, 11, 15, 16, 17]
+    : [4, 5, 10, 11];
+
   state.grid.forEach((entity, index) => {
+    const isActiveCell = activeIndices.includes(index);
     const isIncoming = state.incomingCells.has(index);
     const isMergeHint = state.mergeHintCells.has(index);
     const visibleEntity = isIncoming ? null : entity;
     const cell = document.createElement("button");
-    cell.className = `cell ${visibleEntity ? "" : "empty"} ${isIncoming ? "incoming-cell" : ""} ${isMergeHint ? "merge-hint-cell" : ""}`;
+    cell.className = `cell ${visibleEntity ? "" : "empty"} ${isIncoming ? "incoming-cell" : ""} ${isMergeHint ? "merge-hint-cell" : ""} ${!isActiveCell ? "locked-cell" : ""}`;
     cell.dataset.index = String(index);
     cell.addEventListener("click", () => handleCellClick(index));
     cell.addEventListener("dblclick", () => {
@@ -1875,6 +1904,10 @@ function renderBoard() {
         cooldownEl.style.setProperty("--cooldown-progress", String(cooldownProgress));
         cooldownEl.innerHTML = `<span class="pool-cooldown-core"></span>`;
         card.append(cooldownEl);
+        const costLabel = document.createElement("div");
+        costLabel.className = "pool-cost-label";
+        costLabel.textContent = "-1 决策点";
+        card.append(costLabel);
       }
       cell.append(card);
       cell.title = visibleEntity.type === "talent" && state.specializationUnlocked
@@ -1890,19 +1923,28 @@ function renderTask() {
   if (!state.currentTask) {
     return;
   }
+
+  taskPanelEl.classList.toggle("tutorial-flash", !state.tutorialComplete && state.currentTask.id.startsWith("tutorial-"));
+
   const objective = state.currentTask.objective;
   const levelIcon = TALENT_META[objective.level]?.icon || "";
   const roleIcon = objective.role ? ROLE_ICONS[objective.role] : "";
   const iconText = [roleIcon, levelIcon].filter(Boolean).join(" ");
   
+  const remainingTutorials = TUTORIAL_TASKS.length - state.tutorialIndex;
+  const totalFreeplayTasks = FREEPLAY_TASKS.length;
   taskSubtitleEl.textContent =
     !state.tutorialComplete && state.currentTask.id.startsWith("tutorial-")
-      ? `入职培训 · ${state.currentTask.title}`
-      : "";
+      ? `入职培训 · ${state.currentTask.title}（剩余 ${remainingTutorials} 关）`
+      : state.tutorialComplete
+        ? `自由任务 · 第 ${state.freeplayTaskIndex || 1} / ${totalFreeplayTasks} 关`
+        : "";
   taskDescriptionEl.textContent = state.currentTask.description;
   taskTargetEl.textContent = `任务进度：${getTaskProgress()} / ${objective.count}${iconText ? ` ${iconText}` : ""}`;
   taskRewardEl.textContent = getCurrentTaskRewardText();
   submitTaskButtonEl.disabled = !isTaskComplete() || state.isGameOver;
+  submitTaskButtonEl.classList.toggle("task-complete-flash", isTaskComplete() && !state.isGameOver);
+  submitTaskButtonEl.classList.toggle("task-ready", isTaskComplete() && !state.isGameOver);
 }
 
 function renderStash() {
@@ -1921,7 +1963,10 @@ function renderStash() {
     item.dataset.stashId = entity.id;
     const meta = getEntityVisualMeta(entity);
     item.innerHTML = `<div class="talent-card ${meta.colorClass} ${entity.type === "skillWorker" ? "skill-worker-card" : ""} stash-card">${getEntityCardInnerMarkup(entity)}</div>`;
-    item.addEventListener("click", () => deployStashEntity(entity.id, item));
+    item.addEventListener("click", () => {
+      playClickSound();
+      deployStashEntity(entity.id, item);
+    });
     stashListEl.append(item);
   });
 }
@@ -1929,46 +1974,42 @@ function renderStash() {
 function renderShop() {
   shopListEl.innerHTML = "";
   const template = document.querySelector("#shopItemTemplate");
-  const selectedTalent = isSelectedTalent() ? state.grid[state.selectedCell] : null;
 
   SHOP_ITEMS.forEach((item) => {
     const button = template.content.firstElementChild.cloneNode(true);
-    let costText = item.costLabel;
-    let descText = item.description;
-
-    if (item.id === "distill" && selectedTalent) {
-      costText = `返还 ${getDecomposeReward(selectedTalent.level)} Token`;
-      descText = `蒸馏当前选中的 ${getTalentDisplayName(selectedTalent.level, selectedTalent.role)}，返还 ${getDecomposeReward(selectedTalent.level)} Token。`;
-    }
-
     button.id = item.id;
-    button.querySelector(".shop-title").textContent = item.name;
-    button.querySelector(".shop-cost").textContent = costText;
-    button.querySelector(".shop-desc").textContent = descText;
-    button.disabled = item.isDisabled();
-    button.addEventListener("click", () => item.use());
-    shopListEl.append(button);
-  });
-}
-
-function renderPoolStore() {
-  poolStorePanelEl.classList.toggle("hidden", !state.specializationUnlocked);
-  poolStorePanelEl.setAttribute("aria-hidden", String(!state.specializationUnlocked));
-  poolStoreListEl.innerHTML = "";
-  if (!state.specializationUnlocked) {
-    return;
-  }
-
-  const template = document.querySelector("#shopItemTemplate");
-  SPECIALIZED_POOL_ITEMS.forEach((item) => {
-    const button = template.content.firstElementChild.cloneNode(true);
     button.querySelector(".shop-title").textContent = item.name;
     button.querySelector(".shop-cost").textContent = item.costLabel;
     button.querySelector(".shop-desc").textContent = item.description;
     button.disabled = item.isDisabled();
-    button.addEventListener("click", () => item.use());
-    poolStoreListEl.append(button);
+    button.addEventListener("click", () => {
+      playClickSound();
+      item.use();
+    });
+    shopListEl.appendChild(button);
   });
+
+  if (state.specializationUnlocked) {
+    SPECIALIZED_POOL_ITEMS.forEach((item) => {
+      const button = template.content.firstElementChild.cloneNode(true);
+      button.id = item.id;
+      button.querySelector(".shop-title").textContent = item.name;
+      button.querySelector(".shop-cost").textContent = item.costLabel;
+      button.querySelector(".shop-desc").textContent = item.description;
+      button.disabled = item.isDisabled();
+      button.addEventListener("click", () => {
+        playClickSound();
+        item.use();
+      });
+      shopListEl.appendChild(button);
+    });
+  }
+}
+
+function renderPoolStore() {
+  if (!poolStorePanelEl) return;
+  poolStorePanelEl.classList.add("hidden");
+  poolStorePanelEl.setAttribute("aria-hidden", "true");
 }
 
 function renderResources() {
@@ -1991,7 +2032,10 @@ function renderBubbles() {
       <span>${bubble.cost} Token</span>
       <span>${bubble.secondsLeft}s</span>
     `;
-    el.addEventListener("click", () => purchaseBubble(bubble.id));
+    el.addEventListener("click", () => {
+      playClickSound();
+      purchaseBubble(bubble.id);
+    });
     bubbleLayerEl.append(el);
     if (!bubble.hasAnimated) {
       animateWithGsap(el, {
@@ -2050,6 +2094,7 @@ function restartGame() {
   state.totalUnlockedCells = 0;
   state.totalDistilled = 0;
   state.completedFreeplayTasks = 0;
+  state.freeplayTaskIndex = 1;
   state.specializationUnlocked = false;
   state.pendingSkillWorkerIndex = null;
   state.pendingTransferIndex = null;
