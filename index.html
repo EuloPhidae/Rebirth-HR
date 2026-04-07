@@ -40,7 +40,6 @@
             <p class="hint">点击人才库可直接招募，再次点击同一个人才库也会继续招募；同类同级资产可合成。</p>
           </div>
           <div id="board" class="board" aria-label="人才棋盘"></div>
-          <div id="bubbleLayer" class="bubble-layer"></div>
         </section>
       </section>
 
@@ -68,7 +67,7 @@
 
         <section class="panel distill-panel hidden" id="distillPanel">
           <div class="panel-title-row">
-            <h2>裁员蒸馏</h2>
+            <h2>裁员</h2>
           </div>
           <div class="distill-drop-zone" id="distillDropZone">
             <span class="distill-icon">🗑️</span>
@@ -146,7 +145,7 @@
     <div class="modal panel">
       <p class="eyebrow">Phase Two</p>
       <h2>职能系统已开启</h2>
-      <p class="task-text">公司规模扩大了。现在人才会带有职能属性，例如运营实习生、行政应届生。之后只有同职能、同等级的人才才能合成，棋盘上的旧人才也已被重新分配职能。</p>
+      <p class="task-text">现在公司规模扩大了。现在人才会带有职能属性，例如运营实习生、行政应届生。之后只有同职能、同等级的人才才能合成，棋盘上的旧人才也已被重新分配职能。</p>
       <button id="closeSpecializationButton" class="primary-button">继续工作</button>
     </div>
   </div>
@@ -155,8 +154,44 @@
     <div class="modal panel tutorial-complete-modal">
       <p class="eyebrow">Training Complete</p>
       <h2>入职培训完成</h2>
-      <p class="task-text">你已经完成了入职培训。现在开始，你要完成公司派发给你的任务；如果在给定决策点内无法完成，你就会被开除。</p>
+      <p class="task-text">你已经完成了入职培训。现在开始，你要完成公司派发给你的任务；如果在给定决策点内无法完成，你就会“被”开除。</p>
       <button id="closeTutorialCompleteButton" class="primary-button">正式入职</button>
+    </div>
+  </div>
+
+  <div id="businessTrainingCompleteModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel tutorial-complete-modal">
+      <p class="eyebrow">Business Training</p>
+      <h2>业务培训完成</h2>
+      <p class="task-text">恭喜你完成业务培训，你的棋盘权限被扩大了。</p>
+      <button id="closeBusinessTrainingButton" class="primary-button">关闭</button>
+    </div>
+  </div>
+
+  <div id="businessTraining2Modal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel tutorial-complete-modal">
+      <p class="eyebrow">Business Training 2</p>
+      <h2>业务培训扩大</h2>
+      <p class="task-text">恭喜你完成业务培训。现在职能系统扩大了，人才库将开始区分职能。</p>
+      <button id="closeBusinessTraining2Button" class="primary-button">关闭</button>
+    </div>
+  </div>
+
+  <div id="fundTargetModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel tutorial-complete-modal">
+      <p class="eyebrow">Final Goal</p>
+      <h2>最终目标</h2>
+      <p class="task-text">🦹‍♂️高层管理：恭喜你完成了所有培训！\n现在你已经是公司的核心员工了。\n你的最终目标是让公司资金达到 20。\n继续完成任务，兑换资金，达成目标！</p>
+      <button id="closeFundTargetButton" class="primary-button">开始工作</button>
+    </div>
+  </div>
+
+  <div id="gameWinModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel tutorial-complete-modal">
+      <p class="eyebrow">Congratulations!</p>
+      <h2>🎉 目标达成！</h2>
+      <p class="task-text">🦹‍♂️高层管理：干得漂亮！公司资金已经达到目标！\n你成功完成了所有任务，成为了公司的核心骨干。\n感谢你的辛勤付出！</p>
+      <button id="restartGameButton" class="primary-button">重新开始</button>
     </div>
   </div>
 

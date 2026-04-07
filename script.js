@@ -70,33 +70,33 @@ const TUTORIAL_TASKS = [
   {
     id: "tutorial-1",
     decisionPoints: 1,
-    title: "入职培训 1",
-    description: "使用 1 点决策点和 1 点公司资金，采购一个 📦人才库，并点击暂存区中的它自动部署到棋盘空格后提交。",
-    rewardText: "奖励：正式获得招聘权限",
+    title: "入职培训 1 - 部署人才库 ",
+    description: "🦹‍♂️高层管理：看到我们暂存区的📦人才库没有。\n 你只需要点击它就能完成今天的培训任务。",
+    rewardText: "奖励：职业技巧与你的个人成长",
     objective: { type: "board_pool_count", count: 1 }
   },
   {
     id: "tutorial-2",
     decisionPoints: 1,
-    title: "入职培训 2",
-    description: "点击棋盘中的人才库，消耗 1 点决策点招聘 1 名☕实习生，然后提交。",
-    rewardText: "奖励：学会基础招聘",
+    title: "入职培训 2 - 学习招聘",
+    description: "🦹‍♂️高层管理：点击棋盘中的人才库📦，进行一次招聘，每次招聘会消耗一个决策点。\n你必须在我们限制的决策点内完成任务，否则你就是名不称职的员工。 ",
+    rewardText: "奖励：职业技巧与你的个人成长",
     objective: { type: "talent_level_count", level: 1, count: 1 }
   },
   {
     id: "tutorial-3",
     decisionPoints: 2,
-    title: "入职培训 3",
-    description: "再点击两次人才库，获得两名☕实习生。别问为什么是合成，这就是设定。将他们合成为 1 名📘应届生后提交。",
-    rewardText: "奖励：学会合成晋升",
+    title: "入职培训 3 - 合成员工",
+    description: "🦹‍♂️高层管理：再点击两次人才库，招聘到两名新实习的新员工。然后拖动其中一个到另一个人身上进行合成。\n别问为什么是合成，这就是我们公司对人才培养的设定。\n 将他们合成为 1 名应届生后提交。",
+    rewardText: "奖励：职业技巧与你的个人成长",
     objective: { type: "talent_level_count", level: 2, count: 1 }
   },
   {
     id: "tutorial-5",
     decisionPoints: 1,
     title: "入职培训 5",
-    description: "任选一名员工执行一次裁员，并蒸馏他的工作成果，获得对应等级的 Token，然后提交任务。",
-    rewardText: "奖励：学会资源回收",
+    description: "🦹‍♂️高层管理：公司的人员真是太臃肿了，这得花不少钱！\n你今天的任务是，任选一名员工执行一次裁员，把该员工拖动到裁员区即可。\n记住无论他们怎么求情也没用，你可是我花钱招聘来的员工。\n不想在这里上班尽管不服从安排。\n毕竟不你不干有的是人干。",
+    rewardText: "奖励：职业技巧与你的个人成长",
     objective: { type: "distill_count", count: 1 }
   }
 ];
@@ -113,8 +113,8 @@ const BUSINESS_TRAINING_TASKS = [
     id: "business-1",
     decisionPoints: 1,
     title: "业务培训 1",
-    description: "暂存区已有一个 Lv.1 人才库。点击它自动部署到棋盘空格。再获得一个 Lv.1 人才库并进行合成，生成一个 Lv.2 人才库后提交。",
-    rewardText: "奖励：学会特殊人才合成",
+    description: "🦹‍♂️高层管理：今天培训的内容很简单。点击暂存区的人才库，部署到棋盘格。然后合成人才库。你的任务就结束了。",
+    rewardText: "奖励：职业技巧与你的个人成长",
     rewardKpi: 12,
     objective: { type: "merge_infp_count", count: 1 }
   },
@@ -122,8 +122,8 @@ const BUSINESS_TRAINING_TASKS = [
     id: "business-2",
     decisionPoints: 3,
     title: "业务培训 2",
-    description: "前两次点击人才库发射器，发射出两名特殊 INFP 人才。INFP 无法和不带属性的人才合成，只能和 INFP 同级合成。合成这个 INFP 人才后提交。",
-    rewardText: "奖励：理解 INFP 属性",
+    description: "🦹‍♂️高层管理：infp员工真是令人讨厌，他们自己的想法太多了。我最讨厌这样的员工了，真恨不得把他们统统分解掉。不过等他们等级高了，再分解会更具性价比。\n今天你会招聘到俩个infp员工，他们只能内部合成，简直是降低我们公司的效率。\n把这俩个人合成在一起！",
+    rewardText: "奖励：职业技巧与你的个人成长",
     rewardKpi: 12,
     objective: { type: "merge_infp_count", count: 1 }
   },
@@ -131,18 +131,48 @@ const BUSINESS_TRAINING_TASKS = [
     id: "business-3",
     decisionPoints: 1,
     title: "业务培训 3",
-    description: "点击技能商店，使用 KPI 兑换一个行动点。完成兑换后提交。",
-    rewardText: "奖励：理解资源兑换",
+    description: "🦹‍♂️高层管理：我们发放的决策点是绝对够用的，由于你的工作失误肯定会有决策点不足的时候。\n我会大发慈悲给你补救的机会。看到左上角的技能商店没有，点开使用一次用Kpi兑换决策点。\n我们公司还是太有良心了。",
+    rewardText: "奖励：职业技巧与你的个人成长",
     rewardKpi: 12,
     objective: { type: "exchange_action", count: 1 }
   }
 ];
 
+const BUSINESS_TRAINING_TASKS_2 = [
+  {
+    id: "business2-1",
+    decisionPoints: 2,
+    title: "业务培训 2-1",
+    description: "🦹‍♂️高层管理：我大发慈悲的给你开放了新权限。\n现在你可以看到员工开始区分部门了。\n今后你要根据部门进行区分招聘。\n看到左上角的技能商店没有，购买一个运营人才库。\n然后放入棋盘格，你今天就可以下班了。",
+    rewardText: "奖励：职业技巧与你的个人成长",
+    rewardKpi: 12,
+    objective: { type: "buy_role_pool", role: "运营", count: 1 }
+  },
+  {
+    id: "business2-2",
+    decisionPoints: 3,
+    title: "业务培训 2-2",
+    description: "🦹‍♂️高层管理：我发现了一种特别好用的员工。\n他们不仅不需要购买五险一金，还不会生病请假。\n只要给他们足够的token就能无限干活。\n你从左上角的技能商店帮我兑换一个这样的员工。\n你问我，Token不够怎么办？\n分解掉一些老员工，优先干掉那些不听话的infp员工！",
+    rewardText: "奖励：职业技巧与你的个人成长",
+    rewardKpi: 12,
+    objective: { type: "board_skill_worker_count", count: 1 }
+  },
+  {
+    id: "business2-3",
+    decisionPoints: 3,
+    title: "业务培训 2-3",
+    description: "🦹‍♂️高层管理：现在你有了员工.Skill。\n双击它，消耗Token兑换公司资金。\n如果Token不足，你需要先分解一些员工。\n兑换一次后提交任务。",
+    rewardText: "奖励：职业技巧与你的个人成长",
+    rewardKpi: 12,
+    objective: { type: "exchange_skill_worker", count: 1 }
+  }
+];
+
 Object.assign(TUTORIAL_TASKS[1], {
-  description: "点击棋盘中的人才库，消耗 1 点决策点，招募 1 名实习生，然后提交。"
+  description: "🦹‍♂️高层管理：我给你开放了决策点，你点击一次人才库就可以进行招聘。你尝试招聘一个新员工。"
 });
 Object.assign(TUTORIAL_TASKS[2], {
-  description: "再点击两次人才库，获得两名实习生。将他们合成为 1 名应届生后提交。"
+  description: "🦹‍♂️高层管理：再点击两次人才库，获得两名实习生。将他们合成为 1 名应届生。别问为什么是合成，这是我们公司的设定。"
 });
 
 const state = {
@@ -154,7 +184,6 @@ const state = {
   kpi: 0,
   currentTask: null,
   selectedCell: null,
-  bubbles: [],
   isGameOver: false,
   tutorialIndex: 0,
   tutorialComplete: false,
@@ -165,9 +194,17 @@ const state = {
   specializationUnlocked: false,
   businessTrainingIndex: 0,
   businessTrainingComplete: false,
+  businessTraining2Index: 0,
+  businessTraining2Complete: false,
+  freeplayAfterBusinessTraining: 0,
+  totalSkillWorkerExchanges: 0,
   totalExchanged: 0,
+  boardExpanded: false,
   pendingSkillWorkerIndex: null,
-  pendingTransferIndex: null
+  pendingTransferIndex: null,
+  usedSkillWorkerIndices: new Set(),
+  fundTargetActive: false,
+  fundTarget: 20
 };
 
 state.incomingCells = new Set();
@@ -176,7 +213,6 @@ state.lastInteractionAt = Date.now();
 state.poolCooldowns = new Map();
 
 const boardEl = document.querySelector("#board");
-const bubbleLayerEl = document.querySelector("#bubbleLayer");
 const decisionPointsEl = document.querySelector("#decisionPoints");
 const companyFundsEl = document.querySelector("#companyFunds");
 const tokenCountEl = document.querySelector("#tokenCount");
@@ -202,6 +238,14 @@ const specializationModalEl = document.querySelector("#specializationModal");
 const closeSpecializationButtonEl = document.querySelector("#closeSpecializationButton");
 const tutorialCompleteModalEl = document.querySelector("#tutorialCompleteModal");
 const closeTutorialCompleteButtonEl = document.querySelector("#closeTutorialCompleteButton");
+const businessTrainingCompleteModalEl = document.querySelector("#businessTrainingCompleteModal");
+const closeBusinessTrainingButtonEl = document.querySelector("#closeBusinessTrainingButton");
+const businessTraining2ModalEl = document.querySelector("#businessTraining2Modal");
+const closeBusinessTraining2ButtonEl = document.querySelector("#closeBusinessTraining2Button");
+const fundTargetModalEl = document.querySelector("#fundTargetModal");
+const closeFundTargetButtonEl = document.querySelector("#closeFundTargetButton");
+const gameWinModalEl = document.querySelector("#gameWinModal");
+const gameWinRestartButtonEl = document.querySelector("#gameWinModal #restartGameButton");
 const skillWorkerModalEl = document.querySelector("#skillWorkerModal");
 const skillWorkerModalTextEl = document.querySelector("#skillWorkerModalText");
 const confirmSkillWorkerButtonEl = document.querySelector("#confirmSkillWorkerButton");
@@ -226,7 +270,7 @@ const closeStoryButtonEl = document.querySelector("#closeStoryButton");
 const toastEl = document.querySelector("#toast");
 const winAudio = new Audio("win.mp3");
 const mergeAudio = new Audio("linhmitto-bubblepop-254773.mp3");
-const recruitAudio = new Audio("dragon-studio-bubble-pop-406640.mp3");
+const recruitAudio = new Audio("creatorshome-pop-cartoon-328167.mp3");
 const clickAudio = new Audio("creatorshome-low-pop-368761.mp3");
 
 function playClickSound() {
@@ -313,9 +357,9 @@ const DISTILL_STORIES = {
       type: 3,
       reward: { funds: -1 },
       leaderResponse: [
-        "你太心软了。管理不是做慈善，记住这一点。",
-        "我对你很失望。这种态度，怎么能在职场生存？",
-        "你这样下去，迟早会被淘汰的。学会狠心，才能走得更远。",
+        "你太心软了。公司不是做慈善，记住这一点。",
+        "其实，我对你最近的表现是有一些失望的。当初把你放到这个能力档位，不是因为你已经完全达到了，而是我认为你有潜力在真实任务里快速成长起来。",
+        "我的预期不是让你把指令执行完就结束了，而是希望你能逐步形成更强的任务理解、抽象总结和自主判断能力。",
         "你在浪费公司的钱。记住，每一分补偿都是从利润里扣的。",
         "你的同情心用错了地方。员工是资源，不是朋友。",
         "我需要重新评估你的管理潜力。这种软弱的表现让我很担忧。",
@@ -356,6 +400,37 @@ closeTutorialCompleteButtonEl.addEventListener("click", () => {
   showTutorialCompleteModal(false);
 });
 
+closeBusinessTrainingButtonEl.addEventListener("click", () => {
+  playClickSound();
+  showBusinessTrainingCompleteModal(false);
+  state.freeplayAfterBusinessTraining = 1;
+  assignFreeplayTask();
+  render();
+});
+
+closeBusinessTraining2ButtonEl.addEventListener("click", () => {
+  playClickSound();
+  showBusinessTraining2Modal(false);
+  assignRolesToExistingBoardTalents();
+  convertExistingPoolsToAdminPools();
+  addLog("职能分配完成，之后人才库将分配职能。");
+  state.specializationUnlocked = true;
+  render();
+});
+
+closeFundTargetButtonEl.addEventListener("click", () => {
+  playClickSound();
+  showFundTargetModal(false);
+  assignFreeplayTask();
+  render();
+});
+
+gameWinRestartButtonEl.addEventListener("click", () => {
+  playClickSound();
+  showGameWinModal(false);
+  restartGame();
+});
+
 cancelSkillWorkerButtonEl.addEventListener("click", () => {
   playClickSound();
   closeSkillWorkerModal();
@@ -375,6 +450,7 @@ openShopButtonEl.addEventListener("click", () => {
   playClickSound();
   shopModalEl.classList.remove("hidden");
   shopModalEl.setAttribute("aria-hidden", "false");
+  renderShop();
 });
 
 closeShopButtonEl.addEventListener("click", () => {
@@ -482,12 +558,11 @@ function getDistance(aIndex, bIndex) {
 }
 
 function getEmptyIndices() {
-  const activeIndices = state.tutorialComplete
-    ? [3, 4, 5, 9, 10, 11, 15, 16, 17]
-    : [4, 5, 10, 11];
+  const baseActive = state.tutorialComplete ? [3, 4, 5, 9, 10, 11, 15, 16, 17] : [4, 5, 10, 11];
+  const expandedActive = state.boardExpanded ? [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 20, 21, 22, 23] : baseActive;
   return state.grid
     .map((entity, index) => (entity ? -1 : index))
-    .filter((index) => index !== -1 && activeIndices.includes(index));
+    .filter((index) => index !== -1 && expandedActive.includes(index));
 }
 
 function getNearestEmptyIndexToIndex(originIndex) {
@@ -579,9 +654,8 @@ function getEntityCardInnerMarkup(entity) {
   const meta = getEntityVisualMeta(entity);
   const isPoolDisabled = entity.type === "pool" && state.decisionPoints <= 0;
   const disabledIcon = isPoolDisabled ? "🚫" : "";
-  const attrIcon = entity.attribute === "INFP" ? "🦋" : "";
   return `
-    <div class="talent-icon">${attrIcon}${meta.icon}${disabledIcon}</div>
+    <div class="talent-icon">${meta.icon}${disabledIcon}</div>
     <div class="talent-name">${meta.name}</div>
     <div class="talent-level">Lv.${entity.level}</div>
   `;
@@ -612,6 +686,38 @@ function showTutorialCompleteModal(visible) {
   tutorialCompleteModalEl.setAttribute("aria-hidden", String(!visible));
   if (visible) {
     animateModalEntrance(tutorialCompleteModalEl);
+  }
+}
+
+function showBusinessTrainingCompleteModal(visible) {
+  businessTrainingCompleteModalEl.classList.toggle("hidden", !visible);
+  businessTrainingCompleteModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(businessTrainingCompleteModalEl);
+  }
+}
+
+function showBusinessTraining2Modal(visible) {
+  businessTraining2ModalEl.classList.toggle("hidden", !visible);
+  businessTraining2ModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(businessTraining2ModalEl);
+  }
+}
+
+function showFundTargetModal(visible) {
+  fundTargetModalEl.classList.toggle("hidden", !visible);
+  fundTargetModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(fundTargetModalEl);
+  }
+}
+
+function showGameWinModal(visible) {
+  gameWinModalEl.classList.toggle("hidden", !visible);
+  gameWinModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(gameWinModalEl);
   }
 }
 
@@ -910,7 +1016,7 @@ function handleDistillDrop(transferData) {
     const index = parseInt(idOrIndex, 10);
     const entity = state.grid[index];
     if (!entity || entity.type !== "talent") {
-      addLog("只能蒸馏员工，无法蒸馏其他类型的资产。", "warning");
+      addLog("只能放入员工，无法放入其他类型的资产。", "warning");
       return;
     }
     
@@ -1040,26 +1146,74 @@ function isSelectedTalentUpgradeable() {
   return isSelectedTalent() && state.grid[state.selectedCell].level < MAX_LEVEL;
 }
 
+function getRoleIcon(entity) {
+  if (!entity || !entity.role) return null;
+  const baseIcon = TALENT_META[entity.level]?.icon?.split(" ")[0] || "";
+  if (entity.role === "运营") {
+    return baseIcon + " 📊";
+  }
+  if (entity.role === "行政") {
+    return baseIcon + " 📋";
+  }
+  return null;
+}
+
 function getEntityVisualMeta(entity) {
   if (entity.type === "talent") {
     const baseMeta = ENTITY_META.talent[entity.level];
-    const roleIcon = entity.role ? ROLE_ICONS[entity.role] : null;
+    const baseIcon = baseMeta.icon || "";
+    const attrIcon = entity.attribute === "INFP" ? "🦋" : "";
+    
+    let iconText;
+    if (entity.role) {
+      const basePersonIcon = baseIcon.split(" ")[0] || "";
+      const roleIcon = entity.role === "运营" ? "📊" : "📋";
+      iconText = [basePersonIcon, roleIcon, attrIcon].filter(Boolean).join(" ");
+    } else {
+      iconText = [baseIcon, attrIcon].filter(Boolean).join(" ");
+    }
+    
     const attrText = entity.attribute ? ` [${entity.attribute}]` : "";
+    let colorClass = baseMeta.colorClass;
+    if (entity.role === "运营") {
+      colorClass = `role-ops-${entity.level}`;
+    } else if (entity.role === "行政") {
+      colorClass = `role-admin-${entity.level}`;
+    }
     return {
       ...baseMeta,
       name: getTalentDisplayName(entity.level, entity.role) + attrText,
-      icon: roleIcon || baseMeta.icon
+      icon: iconText || baseMeta.icon,
+      colorClass
     };
   }
 
   if (entity.type === "pool") {
     const baseMeta = ENTITY_META.pool[entity.level];
-    const roleIcon = entity.role ? ROLE_ICONS[entity.role] : null;
+    const baseIcon = baseMeta.icon || "";
+    const attrIcon = entity.attribute === "INFP" ? "🦋" : "";
+    
+    let iconText;
+    if (entity.role) {
+      const basePersonIcon = baseIcon.split(" ")[0] || "";
+      const roleIcon = entity.role === "运营" ? "📊" : "📋";
+      iconText = [basePersonIcon, roleIcon, attrIcon].filter(Boolean).join(" ");
+    } else {
+      iconText = [baseIcon, attrIcon].filter(Boolean).join(" ");
+    }
+    
     const attrText = entity.attribute ? ` [${entity.attribute}]` : "";
+    let colorClass = baseMeta.colorClass;
+    if (entity.role === "运营") {
+      colorClass = `role-ops-pool-${entity.level}`;
+    } else if (entity.role === "行政") {
+      colorClass = `role-admin-pool-${entity.level}`;
+    }
     return {
       ...baseMeta,
       name: (entity.role ? `${entity.role}人才库` : baseMeta.name) + attrText,
-      icon: roleIcon || baseMeta.icon
+      icon: iconText || baseMeta.icon,
+      colorClass
     };
   }
 
@@ -1079,6 +1233,9 @@ function getTaskProgress(task = state.currentTask) {
   if (objective.type === "talent_level_count") {
     return state.grid.filter((entity) => {
       if (!entity || entity.type !== "talent" || entity.level !== objective.level) {
+        return false;
+      }
+      if (objective.excludeAttribute && entity.attribute === objective.excludeAttribute) {
         return false;
       }
       if (!objective.role) {
@@ -1114,6 +1271,24 @@ function getTaskProgress(task = state.currentTask) {
     return state.totalExchanged;
   }
 
+  if (objective.type === "none") {
+    return 1;
+  }
+
+  if (objective.type === "buy_role_pool") {
+    const hasRolePool = state.grid.some((entity) => entity && entity.type === "pool" && entity.role === objective.role);
+    return hasRolePool ? 1 : 0;
+  }
+
+  if (objective.type === "board_skill_worker_count") {
+    const skillWorkerCount = state.grid.filter((entity) => entity && entity.type === "skillWorker").length;
+    return skillWorkerCount;
+  }
+
+  if (objective.type === "exchange_skill_worker") {
+    return state.totalSkillWorkerExchanges || 0;
+  }
+
   return 0;
 }
 
@@ -1146,6 +1321,18 @@ function buildFreeplayTask(baseTask) {
     const role = getRandomJobFunction();
     objective.role = role;
     const roleIcon = ROLE_ICONS[role];
+
+    const needsExcludeInfp = Math.random() < 0.5;
+    if (needsExcludeInfp) {
+      objective.excludeAttribute = "INFP";
+      return {
+        ...baseTask,
+        department: getDepartmentName(role),
+        description: `${getDepartmentName(role)}需要 ${objective.count} 名${roleIcon}${role}${targetName}，（不要infp）`,
+        objective
+      };
+    }
+
     return {
       ...baseTask,
       department: getDepartmentName(role),
@@ -1167,6 +1354,7 @@ function assignFreeplayTask() {
   state.currentTask = buildFreeplayTask(randomFromList(FREEPLAY_TASKS));
   state.decisionPoints = state.currentTask.decisionPoints;
   state.freeplayTaskIndex += 1;
+  state.usedSkillWorkerIndices = new Set();
   clearSelection();
 }
 
@@ -1208,13 +1396,13 @@ function unlockSpecializationSystem() {
   state.specializationUnlocked = true;
   assignRolesToExistingBoardTalents();
   convertExistingPoolsToAdminPools();
-  addLog("公司扩张完成，职能系统已开启。之后只有同职能、同等级的员工才能合成，任务单也会开始指定职能。");
+  addLog("我扩大了你的业务权限，职能系统已开启。之后只有同职能、同等级的员工才能合成，派发的任务也会开始指定职能。");
   showSpecializationModal(true);
 }
 
 function finishTutorial() {
   state.tutorialComplete = true;
-  addLog("你的入职培训完成了，接下来自己摸索吧。如果没在规定的决策点内完成任务，你就被炒鱿鱼了。");
+  addLog("你的入职培训完成了，接下来自己摸索吧。如果没在规定的决策点内完成任务，你就应该辞职谢罪。");
   assignFreeplayTask();
   showTutorialCompleteModal(true);
 }
@@ -1228,6 +1416,9 @@ function consumeSubmittedTalents(task) {
   for (let index = 0; index < state.grid.length && remaining > 0; index += 1) {
     const entity = state.grid[index];
     if (!entity || entity.type !== "talent" || entity.level !== task.objective.level) {
+      continue;
+    }
+    if (task.objective.excludeAttribute && entity.attribute === task.objective.excludeAttribute) {
       continue;
     }
     if (task.objective.role && entity.role !== task.objective.role) {
@@ -1275,6 +1466,7 @@ function submitCurrentTask() {
   
   if (!state.specializationUnlocked && !state.businessTrainingComplete && state.completedFreeplayTasks >= SPECIALIZATION_UNLOCK_AFTER_TASKS) {
     if (!state.currentTask.id.startsWith("business-")) {
+      state.usedSkillWorkerIndices = new Set();
       state.currentTask = { ...BUSINESS_TRAINING_TASKS[0] };
       state.decisionPoints = state.currentTask.decisionPoints;
       state.businessRecruitCount = 0;
@@ -1285,21 +1477,58 @@ function submitCurrentTask() {
     }
   }
   
-  if (state.businessTrainingIndex >= BUSINESS_TRAINING_TASKS.length) {
-    state.businessTrainingComplete = true;
+  if (state.businessTrainingComplete && !state.businessTraining2Complete && state.freeplayAfterBusinessTraining > 0 && !state.currentTask.id.startsWith("business2-")) {
+    state.freeplayAfterBusinessTraining += 1;
+    if (state.freeplayAfterBusinessTraining > 2) {
+      state.usedSkillWorkerIndices = new Set();
+      state.currentTask = { ...BUSINESS_TRAINING_TASKS_2[0] };
+      state.decisionPoints = state.currentTask.decisionPoints;
+      showBusinessTraining2Modal(true);
+      render();
+      return;
+    }
     assignFreeplayTask();
+    render();
+    return;
+  }
+
+  if (state.businessTrainingIndex >= BUSINESS_TRAINING_TASKS.length && !state.businessTrainingComplete) {
+    state.businessTrainingComplete = true;
+    showBusinessTrainingCompleteModal(true);
   } else if (!state.businessTrainingComplete && state.currentTask.id.startsWith("business-")) {
     state.businessTrainingIndex += 1;
     if (state.businessTrainingIndex >= BUSINESS_TRAINING_TASKS.length) {
+      state.boardExpanded = true;
+      state.totalUnlockedCells = 16;
       state.businessTrainingComplete = true;
-      addLog("业务培训全部完成！");
-      assignFreeplayTask();
+      addLog("公司扩张完成，棋盘已扩大。");
+      showBusinessTrainingCompleteModal(true);
+      render();
+      return;
     } else {
+      state.usedSkillWorkerIndices = new Set();
       state.currentTask = { ...BUSINESS_TRAINING_TASKS[state.businessTrainingIndex] };
       state.decisionPoints = state.currentTask.decisionPoints;
       state.businessRecruitCount = 0;
       state.totalExchanged = 0;
     }
+  } else if (state.currentTask.id.startsWith("business2-")) {
+    if (isTaskComplete()) {
+      state.businessTraining2Index += 1;
+      if (state.businessTraining2Index >= BUSINESS_TRAINING_TASKS_2.length) {
+        state.businessTraining2Complete = true;
+        state.fundTargetActive = true;
+        showFundTargetModal(true);
+      } else {
+        state.usedSkillWorkerIndices = new Set();
+        state.currentTask = { ...BUSINESS_TRAINING_TASKS_2[state.businessTraining2Index] };
+        state.decisionPoints = state.currentTask.decisionPoints;
+      }
+    } else {
+      showBusinessTraining2Modal(true);
+    }
+    render();
+    return;
   } else {
     assignFreeplayTask();
   }
@@ -1311,7 +1540,7 @@ function triggerGameOver() {
     return;
   }
   state.isGameOver = true;
-  addLog("决策点已经耗尽，任务仍未完成。你被开除了。", "warning");
+  addLog("神秘高层：其实，我对你最近的表现是非常失望的。当初把你放到这个能力档位，是我对你的信任！你辜负了我对你的信任，你完全不称职。", "warning");
   showFailureModal(true);
   render();
 }
@@ -1359,9 +1588,16 @@ function confirmSkillWorkerExchange() {
     return;
   }
 
+  if (state.usedSkillWorkerIndices.has(index)) {
+    addLog("该员工.Skill 已经在本任务中兑换过了。", "warning");
+    closeSkillWorkerModal();
+    return;
+  }
+
   state.tokens -= SKILL_WORKER_EXCHANGE_TOKEN;
   state.companyFunds += exchangeFunds;
-  state.grid[index] = null;
+  state.totalSkillWorkerExchanges += 1;
+  state.usedSkillWorkerIndices.add(index);
   clearSelection();
   addLog(`员工.Skill 完成协助，消耗 ${SKILL_WORKER_EXCHANGE_TOKEN} Token，换取 ${exchangeFunds} 点公司资金。`);
   closeSkillWorkerModal();
@@ -1400,6 +1636,7 @@ const SHOP_ITEMS = [
     costLabel: `${SKILL_WORKER_COST} Token`,
     description: "购买后放入棋盘，双击并消耗 Token 可换取公司资金。",
     isDisabled: () => state.tokens < SKILL_WORKER_COST || state.isGameOver,
+    isVisible: () => state.currentTask?.id?.startsWith("business2-") || state.businessTraining2Complete,
     use: () => {
       if (state.tokens < SKILL_WORKER_COST) {
         addLog(`Token 不足，员工.Skill 需要 ${SKILL_WORKER_COST} Token。`, "warning");
@@ -1626,7 +1863,6 @@ function mergeEntities(fromIndex, toIndex) {
   } else {
     const attrText = extra.attribute ? ` [${extra.attribute}]` : "";
     addLog(`合成成功，获得 ${getTalentDisplayName(nextLevel, source.role)}${attrText}。`);
-    maybeSpawnBubble(nextLevel);
   }
 
   playMergeSound();
@@ -1641,62 +1877,6 @@ function moveEntity(fromIndex, toIndex) {
   state.grid[fromIndex] = null;
   state.selectedCell = toIndex;
   render();
-}
-
-function maybeSpawnBubble(level) {
-  if (level < 3 || Math.random() > 0.1) {
-    return;
-  }
-  state.bubbles.push({
-    id: createEntityId("bubble"),
-    level,
-    cost: level * 3,
-    secondsLeft: 10,
-    left: 8 + Math.random() * 78,
-    top: 10 + Math.random() * 68,
-    hasAnimated: false
-  });
-  renderBubbles();
-}
-
-function purchaseBubble(id) {
-  const bubble = state.bubbles.find((item) => item.id === id);
-  if (!bubble) {
-    return;
-  }
-  if (state.tokens < bubble.cost) {
-    addLog(`Token 不足，泡泡人才需要 ${bubble.cost} Token。`, "warning");
-    return;
-  }
-  const emptyIndex = randomFromList(getEmptyIndices());
-  if (emptyIndex === undefined) {
-    addLog("棋盘没有空格，泡泡人才无处安置。", "warning");
-    return;
-  }
-  state.tokens -= bubble.cost;
-  const role = state.specializationUnlocked ? getRandomJobFunction() : undefined;
-  state.grid[emptyIndex] = createEntity("talent", bubble.level, role ? { role } : {});
-  state.bubbles = state.bubbles.filter((item) => item.id !== id);
-  addLog(`泡泡人才入职成功：${getTalentDisplayName(bubble.level, role)}。`);
-  render();
-  animateCell(emptyIndex);
-}
-
-function tickBubbles() {
-  let changed = false;
-  state.bubbles = state.bubbles.filter((bubble) => {
-    bubble.secondsLeft -= 1;
-    if (bubble.secondsLeft <= 0) {
-      addLog("一个泡泡人才消散了。", "warning");
-      changed = true;
-      return false;
-    }
-    changed = true;
-    return true;
-  });
-  if (changed) {
-    renderBubbles();
-  }
 }
 
 function handleCellClick(index) {
@@ -1741,10 +1921,9 @@ function handleBoardDrop(rawData, toIndex) {
     return;
   }
 
-  const activeIndices = state.tutorialComplete
-    ? [3, 4, 5, 9, 10, 11, 15, 16, 17]
-    : [4, 5, 10, 11];
-  if (!activeIndices.includes(toIndex)) {
+  const baseActive = state.tutorialComplete ? [3, 4, 5, 9, 10, 11, 15, 16, 17] : [4, 5, 10, 11];
+  const expandedActive = state.boardExpanded ? [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 20, 21, 22, 23] : baseActive;
+  if (!expandedActive.includes(toIndex)) {
     addLog("该区域尚未解锁。", "warning");
     return;
   }
@@ -1777,7 +1956,7 @@ function handleBoardDrop(rawData, toIndex) {
     return;
   }
 
-  if (!activeIndices.includes(toIndex)) {
+  if (!expandedActive.includes(toIndex)) {
     addLog("该区域尚未解锁。", "warning");
     return;
   }
@@ -1953,10 +2132,10 @@ function getEntityLabel(entity) {
 function renderBoard() {
   boardEl.innerHTML = "";
 
-  const maxCells = state.tutorialComplete ? 9 : 4;
-  const activeIndices = state.tutorialComplete
-    ? [3, 4, 5, 9, 10, 11, 15, 16, 17]
-    : [4, 5, 10, 11];
+  const maxCells = state.tutorialComplete ? (state.boardExpanded ? 25 : 9) : 4;
+  const baseActive = state.tutorialComplete ? [3, 4, 5, 9, 10, 11, 15, 16, 17] : [4, 5, 10, 11];
+  const expandedActive = state.boardExpanded ? [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 20, 21, 22, 23] : baseActive;
+  const activeIndices = expandedActive;
 
   state.grid.forEach((entity, index) => {
     const isActiveCell = activeIndices.includes(index);
@@ -1972,6 +2151,10 @@ function renderBoard() {
         return;
       }
       if (state.grid[index]?.type === "skillWorker") {
+        if (state.usedSkillWorkerIndices.has(index)) {
+          addLog("该员工.Skill 本任务已兑换过。", "warning");
+          return;
+        }
         openSkillWorkerModal(index);
       } else if (state.grid[index]?.type === "talent" && state.specializationUnlocked) {
         openTransferModal(index);
@@ -1995,7 +2178,8 @@ function renderBoard() {
       const isMovable = true;
       const meta = getEntityVisualMeta(visibleEntity);
       const cooldownProgress = visibleEntity.type === "pool" ? getPoolCooldownProgress(index) : 0;
-      card.className = `talent-card ${meta.colorClass} ${visibleEntity.type === "skillWorker" ? "skill-worker-card" : ""} ${isMovable && interactApi ? "js-draggable" : ""} ${isMergeHint ? "merge-hint-card" : ""}`;
+      const isSkillWorkerUsed = visibleEntity.type === "skillWorker" && state.usedSkillWorkerIndices.has(index);
+      card.className = `talent-card ${meta.colorClass} ${visibleEntity.type === "skillWorker" ? "skill-worker-card" : ""} ${isMovable && interactApi ? "js-draggable" : ""} ${isMergeHint ? "merge-hint-card" : ""} ${isSkillWorkerUsed ? "skill-worker-used" : ""}`;
       card.draggable = isMovable && !interactApi;
       if (isMovable) {
         card.dataset.transfer = `cell:${index}`;
@@ -2017,6 +2201,12 @@ function renderBoard() {
         costLabel.textContent = "-1 决策点";
         card.append(costLabel);
       }
+      if (isSkillWorkerUsed) {
+        const usedLabel = document.createElement("div");
+        usedLabel.className = "skill-worker-used-label";
+        usedLabel.textContent = "本次不可使用";
+        card.append(usedLabel);
+      }
       cell.append(card);
       cell.title = visibleEntity.type === "talent" && state.specializationUnlocked
         ? `${getEntityLabel(visibleEntity)}，双击可转岗`
@@ -2034,22 +2224,28 @@ function renderTask() {
 
   taskPanelEl.classList.toggle("tutorial-flash",
     (!state.tutorialComplete && state.currentTask.id.startsWith("tutorial-")) ||
-    (!state.businessTrainingComplete && state.currentTask.id.startsWith("business-"))
+    (!state.businessTrainingComplete && state.currentTask.id.startsWith("business-")) ||
+    state.currentTask.id.startsWith("business2-")
   );
 
   const objective = state.currentTask.objective;
-  const levelIcon = TALENT_META[objective.level]?.icon || "";
-  const roleIcon = objective.role ? ROLE_ICONS[objective.role] : "";
-  const iconText = [roleIcon, levelIcon].filter(Boolean).join(" ");
+  const levelIcon = TALENT_META[objective.level]?.icon?.split(" ")[0] || "";
+  const roleIcon = objective.role ? (objective.role === "运营" ? "📊" : "📋") : "";
+  const iconText = [levelIcon, roleIcon].filter(Boolean).join(" ");
   
   const remainingTutorials = TUTORIAL_TASKS.length - state.tutorialIndex;
   const totalFreeplayTasks = FREEPLAY_TASKS.length;
   const remainingBusiness = BUSINESS_TRAINING_TASKS.length - state.businessTrainingIndex;
+  const remainingBusiness2 = BUSINESS_TRAINING_TASKS_2.length - state.businessTraining2Index;
   
   if (!state.tutorialComplete && state.currentTask.id.startsWith("tutorial-")) {
     taskSubtitleEl.textContent = `入职培训 · ${state.currentTask.title}（剩余 ${remainingTutorials} 关）`;
   } else if (!state.businessTrainingComplete && state.currentTask.id.startsWith("business-")) {
     taskSubtitleEl.textContent = `业务培训 · ${state.currentTask.title}（剩余 ${remainingBusiness} 关）`;
+  } else if (state.currentTask.id.startsWith("business2-")) {
+    taskSubtitleEl.textContent = `业务培训扩大 · ${state.currentTask.title}（剩余 ${remainingBusiness2} 关）`;
+  } else if (state.fundTargetActive) {
+    taskSubtitleEl.textContent = `自由任务 · 第 ${state.freeplayTaskIndex || 1} 关 | 公司资金目标：${state.companyFunds} / ${state.fundTarget}`;
   } else {
     taskSubtitleEl.textContent = `自由任务 · 第 ${state.freeplayTaskIndex || 1} / ${totalFreeplayTasks} 关`;
   }
@@ -2094,6 +2290,9 @@ function renderShop() {
   const template = document.querySelector("#shopItemTemplate");
 
   SHOP_ITEMS.forEach((item) => {
+    if (item.isVisible && !item.isVisible()) {
+      return;
+    }
     const button = template.content.firstElementChild.cloneNode(true);
     button.id = item.id;
     button.querySelector(".shop-title").textContent = item.name;
@@ -2137,42 +2336,6 @@ function renderResources() {
   kpiCountEl.textContent = String(state.kpi);
 }
 
-function renderBubbles() {
-  bubbleLayerEl.innerHTML = "";
-  state.bubbles.forEach((bubble) => {
-    const el = document.createElement("button");
-    el.className = "bubble";
-    el.style.left = `${bubble.left}%`;
-    el.style.top = `${bubble.top}%`;
-    el.innerHTML = `
-      <strong>泡泡人才</strong>
-      <span>${TALENT_META[bubble.level].name}</span>
-      <span>${bubble.cost} Token</span>
-      <span>${bubble.secondsLeft}s</span>
-    `;
-    el.addEventListener("click", () => {
-      playClickSound();
-      purchaseBubble(bubble.id);
-    });
-    bubbleLayerEl.append(el);
-    if (!bubble.hasAnimated) {
-      animateWithGsap(el, {
-        opacity: 0,
-        y: 16,
-        scale: 0.9
-      }, {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.22,
-        ease: "back.out(1.3)",
-        clearProps: "transform,opacity"
-      });
-      bubble.hasAnimated = true;
-    }
-  });
-}
-
 function render() {
   renderResources();
   renderTask();
@@ -2180,11 +2343,16 @@ function render() {
   renderPoolStore();
   renderBoard();
   renderShop();
-  renderBubbles();
   renderDistillPanel();
 
+  if (state.fundTargetActive && state.companyFunds >= state.fundTarget && !state.isGameOver) {
+    state.isGameOver = true;
+    showGameWinModal(true);
+  }
+
   const isBusiness3 = state.currentTask && state.currentTask.id === "business-3";
-  const showShop = isBusiness3 || state.businessTrainingComplete;
+  const isBusiness2_1 = state.currentTask && state.currentTask.id === "business2-1";
+  const showShop = isBusiness3 || isBusiness2_1 || state.businessTrainingComplete;
   if (showShop) {
     openShopButtonEl.classList.remove("hidden");
   } else {
@@ -2213,7 +2381,6 @@ function restartGame() {
   state.kpi = 0;
   state.currentTask = null;
   state.selectedCell = null;
-  state.bubbles = [];
   state.isGameOver = false;
   state.tutorialIndex = 0;
   state.tutorialComplete = false;
@@ -2224,14 +2391,21 @@ function restartGame() {
   state.specializationUnlocked = false;
   state.businessTrainingIndex = 0;
   state.businessTrainingComplete = false;
+  state.businessTraining2Index = 0;
+  state.businessTraining2Complete = false;
+  state.freeplayAfterBusinessTraining = 0;
   state.businessRecruitCount = 0;
   state.totalExchanged = 0;
+  state.totalSkillWorkerExchanges = 0;
+  state.boardExpanded = false;
   state.pendingSkillWorkerIndex = null;
   state.pendingTransferIndex = null;
   state.incomingCells = new Set();
   state.mergeHintCells = new Set();
+  state.usedSkillWorkerIndices = new Set();
   state.lastInteractionAt = Date.now();
   state.poolCooldowns = new Map();
+  state.fundTargetActive = false;
 
   if (!state.tutorialComplete && state.tutorialIndex === 0) {
     state.stash.push(createEntity("pool", 1));
@@ -2241,6 +2415,10 @@ function restartGame() {
   showFailureModal(false);
   showSpecializationModal(false);
   showTutorialCompleteModal(false);
+  showBusinessTrainingCompleteModal(false);
+  showBusinessTraining2Modal(false);
+  showFundTargetModal(false);
+  showGameWinModal(false);
   closeSkillWorkerModal();
   closeTransferModal();
   addLog("你重生了，这一世你再次入职成功。新的培训任务已经发到你的桌上。");
@@ -2249,7 +2427,6 @@ function restartGame() {
 
 initializeEnhancedInteractions();
 restartGame();
-window.setInterval(tickBubbles, 1000);
 window.setInterval(tickPoolCooldowns, 100);
 window.setInterval(pulseAvailablePools, 3000);
 window.setInterval(maybeShowMergeHints, 1000);

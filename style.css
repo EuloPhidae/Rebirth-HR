@@ -274,7 +274,7 @@ h2 {
   transition: all 0.2s ease;
   cursor: pointer;
   position: relative;
-  z-index: 15;
+  z-index: 1;
 }
 
 .distill-drop-zone:hover,
@@ -427,6 +427,7 @@ h2 {
 .task-description {
   font-size: 18px;
   color: var(--text);
+  white-space: pre-line;
 }
 
 .task-meta {
@@ -467,7 +468,7 @@ h2 {
 .board-section {
   position: relative;
   min-height: auto;
-  z-index: 5;
+  z-index: 1;
 }
 
 .board {
@@ -476,7 +477,7 @@ h2 {
   justify-content: center;
   gap: var(--cell-gap);
   position: relative;
-  z-index: 5;
+  z-index: 1;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(230, 237, 247, 0.85)),
     var(--board);
@@ -572,7 +573,8 @@ h2 {
 
 .is-dragging {
   opacity: 0.92;
-  z-index: 200;
+  z-index: 2000 !important;
+  position: relative;
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
 }
 
@@ -634,6 +636,25 @@ h2 {
   animation: skill-worker-pulse 1.5s steps(4, end) infinite;
 }
 
+.skill-worker-used {
+  filter: grayscale(0.8);
+  opacity: 0.6;
+  animation: none;
+}
+
+.skill-worker-used-label {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #888;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
 @keyframes skill-worker-pulse {
   0% { box-shadow: inset 0 0 0 0 rgba(255,255,255,0); }
   50% { box-shadow: inset 0 0 0 4px rgba(63, 122, 196, 0.28); }
@@ -675,6 +696,30 @@ h2 {
 .rarity-3 { background: linear-gradient(180deg, #7eaee5, #5f8fc8); }
 .rarity-4 { background: linear-gradient(180deg, #9ea3d6, #7b82bf); }
 .rarity-5 { background: linear-gradient(180deg, #d8a978, #bf8550); }
+
+.role-ops-1 { background: linear-gradient(180deg, #7eb8e5, #5a9fd4); }
+.role-ops-2 { background: linear-gradient(180deg, #5aa8e0, #3d8bc7); }
+.role-ops-3 { background: linear-gradient(180deg, #3d98db, #2077b8); }
+.role-ops-4 { background: linear-gradient(180deg, #2088d0, #0a66a3); }
+.role-ops-5 { background: linear-gradient(180deg, #0a78c2, #005588); }
+
+.role-admin-1 { background: linear-gradient(180deg, #8bc98b, #6ab56a); }
+.role-admin-2 { background: linear-gradient(180deg, #6ab86a, #4aa04a); }
+.role-admin-3 { background: linear-gradient(180deg, #4aa74a, #2d8a2d); }
+.role-admin-4 { background: linear-gradient(180deg, #2d962d, #107a10); }
+.role-admin-5 { background: linear-gradient(180deg, #108810, #006b00); }
+
+.role-ops-pool-1 { background: linear-gradient(180deg, #7eb8e5, #5a9fd4); }
+.role-ops-pool-2 { background: linear-gradient(180deg, #5aa8e0, #3d8bc7); }
+.role-ops-pool-3 { background: linear-gradient(180deg, #3d98db, #2077b8); }
+.role-ops-pool-4 { background: linear-gradient(180deg, #2088d0, #0a66a3); }
+.role-ops-pool-5 { background: linear-gradient(180deg, #0a78c2, #005588); }
+
+.role-admin-pool-1 { background: linear-gradient(180deg, #8bc98b, #6ab56a); }
+.role-admin-pool-2 { background: linear-gradient(180deg, #6ab86a, #4aa04a); }
+.role-admin-pool-3 { background: linear-gradient(180deg, #4aa74a, #2d8a2d); }
+.role-admin-pool-4 { background: linear-gradient(180deg, #2d962d, #107a10); }
+.role-admin-pool-5 { background: linear-gradient(180deg, #108810, #006b00); }
 
 .merge-pop {
   animation: merge-pop 260ms steps(4, end);
@@ -810,41 +855,6 @@ h2 {
   opacity: 0.45;
 }
 
-.bubble-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.bubble {
-  position: absolute;
-  width: 112px;
-  padding: 10px;
-  border: 1px solid #d8e3ef;
-  background: linear-gradient(180deg, #ffffff, #eef4fb);
-  color: var(--text);
-  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
-  text-align: center;
-  pointer-events: auto;
-  animation: float-bubble 1.3s steps(6, end) infinite;
-  border-radius: 18px;
-}
-
-.bubble strong,
-.bubble span {
-  display: block;
-}
-
-.bubble span {
-  font-size: 12px;
-}
-
-@keyframes float-bubble {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-  100% { transform: translateY(0); }
-}
-
 @keyframes task-flash {
   0%, 100% { box-shadow: 0 0 0 0 rgba(63, 122, 196, 0); }
   50% { box-shadow: 0 0 20px 4px rgba(63, 122, 196, 0.6); }
@@ -948,11 +958,15 @@ h2 {
 }
 
 .placement-ghost {
+  z-index: 2000 !important;
+  position: relative;
   border-radius: 16px;
   box-shadow: 0 16px 30px rgba(15, 23, 42, 0.16);
 }
 
 .recruit-ghost {
+  z-index: 2000 !important;
+  position: relative;
   border-radius: 18px;
   box-shadow: 0 18px 34px rgba(15, 23, 42, 0.2);
 }
