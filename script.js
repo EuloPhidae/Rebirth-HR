@@ -1588,6 +1588,12 @@ function confirmSkillWorkerExchange() {
     return;
   }
 
+  if (state.decisionPoints < 1) {
+    addLog(`决策点不足，无法进行兑换。`, "warning");
+    closeSkillWorkerModal();
+    return;
+  }
+
   if (state.usedSkillWorkerIndices.has(index)) {
     addLog("该员工.Skill 已经在本任务中兑换过了。", "warning");
     closeSkillWorkerModal();
@@ -1595,11 +1601,12 @@ function confirmSkillWorkerExchange() {
   }
 
   state.tokens -= SKILL_WORKER_EXCHANGE_TOKEN;
+  state.decisionPoints -= 1;
   state.companyFunds += exchangeFunds;
   state.totalSkillWorkerExchanges += 1;
   state.usedSkillWorkerIndices.add(index);
   clearSelection();
-  addLog(`员工.Skill 完成协助，消耗 ${SKILL_WORKER_EXCHANGE_TOKEN} Token，换取 ${exchangeFunds} 点公司资金。`);
+  addLog(`员工.Skill 完成协助，消耗 ${SKILL_WORKER_EXCHANGE_TOKEN} Token 和 1 点决策点，换取 ${exchangeFunds} 点公司资金。`);
   closeSkillWorkerModal();
   render();
   animateCell(index);
