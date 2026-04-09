@@ -247,6 +247,118 @@ h2 {
   box-shadow: 0 8px 20px rgba(231, 75, 92, 0.3);
 }
 
+.parking-panel {
+  min-width: 0;
+  max-width: none;
+}
+
+.parking-panel .panel-title-row {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.parking-lot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 80px;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(74, 158, 222, 0.08), rgba(74, 158, 222, 0.02));
+  border-radius: 14px;
+  border: 2px dashed #b8c8da;
+}
+
+.parking-car {
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+  animation: carSpawn 0.3s ease-out;
+}
+
+@keyframes carSpawn {
+  0% {
+    transform: scale(0) rotate(-20deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.car-shop-modal {
+  max-width: 400px;
+}
+
+.car-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, #f8fafc, #f2f6fb);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.car-item:hover {
+  background: linear-gradient(180deg, #fff, #f8fafc);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.car-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.car-item.disabled:hover {
+  transform: none;
+  border-color: var(--line);
+}
+
+.car-emoji {
+  font-size: 32px;
+}
+
+.car-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.car-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.car-price {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.model-panel {
+  min-width: 0;
+  max-width: none;
+}
+
+.model-panel .panel-title-row {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.model-shop-modal {
+  max-width: 400px;
+}
+
 .danger-button:hover {
   background: linear-gradient(180deg, #ff7a88, #ef5565);
   transform: translateY(-2px);
@@ -720,6 +832,30 @@ h2 {
 .role-admin-pool-3 { background: linear-gradient(180deg, #4aa74a, #2d8a2d); }
 .role-admin-pool-4 { background: linear-gradient(180deg, #2d962d, #107a10); }
 .role-admin-pool-5 { background: linear-gradient(180deg, #108810, #006b00); }
+
+.role-finance-1 { background: linear-gradient(180deg, #f0c060, #d4a030); }
+.role-finance-2 { background: linear-gradient(180deg, #e0b040, #c09020); }
+.role-finance-3 { background: linear-gradient(180deg, #d0a020, #b08010); }
+.role-finance-4 { background: linear-gradient(180deg, #c09010, #a07000); }
+.role-finance-5 { background: linear-gradient(180deg, #b08000, #906000); }
+
+.role-design-1 { background: linear-gradient(180deg, #d88be0, #b868c8); }
+.role-design-2 { background: linear-gradient(180deg, #c870d8, #a850b8); }
+.role-design-3 { background: linear-gradient(180deg, #b858c8, #9038a0); }
+.role-design-4 { background: linear-gradient(180deg, #a040b0, #802090); }
+.role-design-5 { background: linear-gradient(180deg, #9028a0, #701080); }
+
+.role-finance-pool-1 { background: linear-gradient(180deg, #f0c060, #d4a030); }
+.role-finance-pool-2 { background: linear-gradient(180deg, #e0b040, #c09020); }
+.role-finance-pool-3 { background: linear-gradient(180deg, #d0a020, #b08010); }
+.role-finance-pool-4 { background: linear-gradient(180deg, #c09010, #a07000); }
+.role-finance-pool-5 { background: linear-gradient(180deg, #b08000, #906000); }
+
+.role-design-pool-1 { background: linear-gradient(180deg, #d88be0, #b868c8); }
+.role-design-pool-2 { background: linear-gradient(180deg, #c870d8, #a850b8); }
+.role-design-pool-3 { background: linear-gradient(180deg, #b858c8, #9038a0); }
+.role-design-pool-4 { background: linear-gradient(180deg, #a040b0, #802090); }
+.role-design-pool-5 { background: linear-gradient(180deg, #9028a0, #701080); }
 
 .merge-pop {
   animation: merge-pop 260ms steps(4, end);
@@ -1250,5 +1386,47 @@ h2 {
 
   .story-reward {
     font-size: 14px;
+  }
+
+  .parking-panel {
+    min-width: auto;
+  }
+
+  .parking-lot {
+    min-height: 60px;
+    padding: 8px;
+  }
+
+  .parking-car {
+    font-size: 22px;
+    padding: 4px;
+  }
+
+  .car-shop-modal {
+    max-width: 95%;
+  }
+
+  .model-panel {
+    min-width: auto;
+  }
+
+  .model-shop-modal {
+    max-width: 95%;
+  }
+
+  .car-item {
+    padding: 10px 12px;
+  }
+
+  .car-emoji {
+    font-size: 26px;
+  }
+
+  .car-name {
+    font-size: 13px;
+  }
+
+  .car-price {
+    font-size: 12px;
   }
 }

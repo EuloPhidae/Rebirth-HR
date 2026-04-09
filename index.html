@@ -85,6 +85,22 @@
           <button id="quitGameButton" class="danger-button">申请离职</button>
         </section>
 
+        <section id="parkingPanel" class="panel parking-panel hidden">
+          <div class="panel-title-row">
+            <h2>🚗 老板停车场</h2>
+            <button id="open4sButton" class="secondary-button">4S店</button>
+          </div>
+          <div id="parkingLot" class="parking-lot"></div>
+        </section>
+
+        <section id="modelPanel" class="panel model-panel hidden">
+          <div class="panel-title-row">
+            <h2>💃 老板的嫩模</h2>
+            <button id="openModelShopButton" class="secondary-button">嫩模商店</button>
+          </div>
+          <div id="modelLot" class="parking-lot"></div>
+        </section>
+
       </aside>
     </main>
   </div>
@@ -180,9 +196,18 @@
   <div id="fundTargetModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal panel tutorial-complete-modal">
       <p class="eyebrow">Final Goal</p>
-      <h2>最终目标</h2>
-      <p class="task-text">🦹‍♂️高层管理：恭喜你完成了所有培训！\n现在你已经是公司的核心员工了。\n你的最终目标是让公司资金达到 20。\n继续完成任务，兑换资金，达成目标！</p>
-      <button id="closeFundTargetButton" class="primary-button">开始工作</button>
+      <h2>🚗 新的任务</h2>
+      <p class="task-text">🦹‍♂️高层管理：恭喜你完成了所有培训！\n现在你已经是公司的核心员工了。\n不过...老板最近想买一辆迈巴赫，\n需要公司资金达到 20 才能购买。\n继续努力赚钱吧！</p>
+      <button id="closeFundTargetButton" class="primary-button">接受任务</button>
+    </div>
+  </div>
+
+  <div id="bossCarModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel tutorial-complete-modal">
+      <p class="eyebrow">Maybach</p>
+      <h2>🚗 老板的迈巴赫</h2>
+      <p class="task-text">🦹‍♂️高层管理：太棒了！\n公司资金已经达到目标了！\n老板终于可以买他心仪的迈巴赫了！\n快打开4S店，帮老板买一辆迈巴赫吧！\n只需要19个公司资金！</p>
+      <button id="closeBossCarButton" class="primary-button">马上安排！</button>
     </div>
   </div>
 
@@ -212,6 +237,53 @@
       <p id="transferModalText" class="task-text"></p>
       <div id="transferOptions" class="shop-list"></div>
       <button id="cancelTransferButton" class="secondary-button">取消</button>
+    </div>
+  </div>
+
+  <div id="carShopModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel car-shop-modal">
+      <div class="panel-title-row">
+        <h2>🏎️ 4S店</h2>
+        <button id="closeCarShopButton" class="secondary-button">关闭</button>
+      </div>
+      <div id="carShopList" class="shop-list"></div>
+    </div>
+  </div>
+
+  <div id="modelShopModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel car-shop-modal">
+      <div class="panel-title-row">
+        <h2>💃 嫩模商店</h2>
+        <button id="closeModelShopButton" class="secondary-button">关闭</button>
+      </div>
+      <div id="modelShopList" class="shop-list"></div>
+    </div>
+  </div>
+
+  <div id="obedience2Modal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel tutorial-complete-modal">
+      <p class="eyebrow">Obedience Training</p>
+      <h2>💃 老板的新需求</h2>
+      <p class="task-text">🦹‍♂️高层管理：老板对迈巴赫很满意！\n不过他又有了新的需求...\n他想要一个嫩模。\n打开嫩模商店，召唤一个给老板吧！</p>
+      <button id="closeObedience2Button" class="primary-button">遵命！</button>
+    </div>
+  </div>
+
+  <div id="obedience3Modal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel tutorial-complete-modal">
+      <p class="eyebrow">Obedience Training</p>
+      <h2>🏢 新的权限</h2>
+      <p class="task-text">🦹‍♂️高层管理：公司对你越来越信任了！\n给你开放了财务部和设计部的员工权限！\n棋盘也全部开放了！\n从技能商店购买一个财务部人才库和一个设计部人才库吧！</p>
+      <button id="closeObedience3Button" class="primary-button">收到！</button>
+    </div>
+  </div>
+
+  <div id="obedienceCompleteModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel tutorial-complete-modal">
+      <p class="eyebrow">Obedience Complete</p>
+      <h2>🎉 服从训练完成</h2>
+      <p class="task-text">🦹‍♂️高层管理：很好，你通过了所有考验。\n财务部和设计部权限已开放，棋盘全部解锁。\n继续努力为公司创造价值吧！</p>
+      <button id="closeObedienceCompleteButton" class="primary-button">继续工作</button>
     </div>
   </div>
 

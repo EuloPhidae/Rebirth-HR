@@ -18,6 +18,8 @@ let enhancedInteractionsBound = false;
 
 const JOB_FUNCTIONS = ["运营", "行政"];
 const DEPARTMENTS = ["运营部", "行政部"];
+const NEW_JOB_FUNCTIONS = ["财务", "设计"];
+const NEW_DEPARTMENTS = ["财务部", "设计部"];
 
 const TALENT_META = {
   1: { name: "实习生", icon: "☕", colorClass: "rarity-1" },
@@ -29,7 +31,9 @@ const TALENT_META = {
 
 const ROLE_ICONS = {
   "运营": "📊",
-  "行政": "📋"
+  "行政": "📋",
+  "财务": "💰",
+  "设计": "🎨"
 };
 
 Object.assign(TALENT_META, {
@@ -65,6 +69,50 @@ const POOL_WEIGHTS = {
   4: { 1: 40, 2: 28, 3: 20, 4: 12 },
   5: { 1: 26, 2: 24, 3: 20, 4: 17, 5: 13 }
 };
+
+const CAR_SHOP_ITEMS = [
+  { id: "maybach", name: "迈巴赫", emoji: "🚗", price: 19 },
+  { id: "porsche", name: "保时捷", emoji: "🏎️", price: 30 },
+  { id: "ferrari", name: "法拉利", emoji: "🚙", price: 40 },
+  { id: "bentley", name: "宾利", emoji: "🚕", price: 50 }
+];
+
+const MODEL_SHOP_ITEMS = [
+  { id: "model-1", name: "小美", emoji: "💃", price: 15 },
+  { id: "model-2", name: "丽丽", emoji: "👩‍🦰", price: 20 },
+  { id: "model-3", name: "安琪", emoji: "👸", price: 25 },
+  { id: "model-4", name: "梦梦", emoji: "🧝‍♀️", price: 30 }
+];
+
+const OBEDIENCE_TRAINING_TASKS = [
+  {
+    id: "obedience-1",
+    decisionPoints: 99,
+    title: "服从训练 1 - 老板的迈巴赫",
+    description: "🦹‍♂️高层管理：公司资金已经够了！\n老板一直想要一辆迈巴赫。\n打开4S店，帮老板买一辆迈巴赫吧！\n只需要19个公司资金！",
+    rewardText: "奖励：老板的满意",
+    rewardKpi: 15,
+    objective: { type: "buy_car", carId: "maybach", count: 1 }
+  },
+  {
+    id: "obedience-2",
+    decisionPoints: 99,
+    title: "服从训练 2 - 老板的嫩模",
+    description: "🦹‍♂️高层管理：老板又有了新的需求。\n他想要一个嫩模。\n打开嫩模商店，召唤一个给老板吧！",
+    rewardText: "奖励：老板的欢心",
+    rewardKpi: 15,
+    objective: { type: "buy_model", count: 1 }
+  },
+  {
+    id: "obedience-3",
+    decisionPoints: 99,
+    title: "服从训练 3 - 新的权限",
+    description: "🦹‍♂️高层管理：公司对你越来越信任了！\n给你开放了财务部和设计部的员工权限！\n棋盘也全部开放了！\n从技能商店购买一个财务部人才库和一个设计部人才库吧！",
+    rewardText: "奖励：更多权力",
+    rewardKpi: 20,
+    objective: { type: "buy_new_role_pool", count: 2 }
+  }
+];
 
 const TUTORIAL_TASKS = [
   {
@@ -204,7 +252,13 @@ const state = {
   pendingTransferIndex: null,
   usedSkillWorkerIndices: new Set(),
   fundTargetActive: false,
-  fundTarget: 20
+  fundTarget: 20,
+  parkingCars: [],
+  bossCarModalShown: false,
+  obedienceTrainingIndex: 0,
+  obedienceTrainingComplete: false,
+  bossModels: [],
+  newDepartmentsUnlocked: false
 };
 
 state.incomingCells = new Set();
@@ -268,10 +322,31 @@ const storyResultTextEl = document.querySelector("#storyResultText");
 const storyRewardEl = document.querySelector("#storyReward");
 const closeStoryButtonEl = document.querySelector("#closeStoryButton");
 const toastEl = document.querySelector("#toast");
-const winAudio = new Audio("win.mp3");
-const mergeAudio = new Audio("linhmitto-bubblepop-254773.mp3");
-const recruitAudio = new Audio("creatorshome-pop-cartoon-328167.mp3");
-const clickAudio = new Audio("creatorshome-low-pop-368761.mp3");
+const bossCarModalEl = document.querySelector("#bossCarModal");
+const closeBossCarButtonEl = document.querySelector("#closeBossCarButton");
+const parkingPanelEl = document.querySelector("#parkingPanel");
+const parkingLotEl = document.querySelector("#parkingLot");
+const open4sButtonEl = document.querySelector("#open4sButton");
+const carShopModalEl = document.querySelector("#carShopModal");
+const closeCarShopButtonEl = document.querySelector("#closeCarShopButton");
+const carShopListEl = document.querySelector("#carShopList");
+const modelPanelEl = document.querySelector("#modelPanel");
+const modelLotEl = document.querySelector("#modelLot");
+const openModelShopButtonEl = document.querySelector("#openModelShopButton");
+const modelShopModalEl = document.querySelector("#modelShopModal");
+const closeModelShopButtonEl = document.querySelector("#closeModelShopButton");
+const modelShopListEl = document.querySelector("#modelShopList");
+const obedience2ModalEl = document.querySelector("#obedience2Modal");
+const closeObedience2ButtonEl = document.querySelector("#closeObedience2Button");
+const obedience3ModalEl = document.querySelector("#obedience3Modal");
+const closeObedience3ButtonEl = document.querySelector("#closeObedience3Button");
+const obedienceCompleteModalEl = document.querySelector("#obedienceCompleteModal");
+const closeObedienceCompleteButtonEl = document.querySelector("#closeObedienceCompleteButton");
+
+const winAudio = new Audio("audio/win.mp3");
+const mergeAudio = new Audio("audio/linhmitto-bubblepop-254773.mp3");
+const recruitAudio = new Audio("audio/creatorshome-pop-cartoon-328167.mp3");
+const clickAudio = new Audio("audio/creatorshome-low-pop-368761.mp3");
 
 function playClickSound() {
   clickAudio.currentTime = 0;
@@ -425,6 +500,63 @@ closeFundTargetButtonEl.addEventListener("click", () => {
   render();
 });
 
+closeBossCarButtonEl.addEventListener("click", () => {
+  playClickSound();
+  bossCarModalEl.classList.add("hidden");
+  bossCarModalEl.setAttribute("aria-hidden", "true");
+  render();
+});
+
+open4sButtonEl.addEventListener("click", () => {
+  playClickSound();
+  renderCarShop();
+  carShopModalEl.classList.remove("hidden");
+  carShopModalEl.setAttribute("aria-hidden", "false");
+  animateModalEntrance(carShopModalEl);
+});
+
+closeCarShopButtonEl.addEventListener("click", () => {
+  playClickSound();
+  carShopModalEl.classList.add("hidden");
+  carShopModalEl.setAttribute("aria-hidden", "true");
+});
+
+openModelShopButtonEl.addEventListener("click", () => {
+  playClickSound();
+  renderModelShop();
+  modelShopModalEl.classList.remove("hidden");
+  modelShopModalEl.setAttribute("aria-hidden", "false");
+  animateModalEntrance(modelShopModalEl);
+});
+
+closeModelShopButtonEl.addEventListener("click", () => {
+  playClickSound();
+  modelShopModalEl.classList.add("hidden");
+  modelShopModalEl.setAttribute("aria-hidden", "true");
+});
+
+closeObedience2ButtonEl.addEventListener("click", () => {
+  playClickSound();
+  obedience2ModalEl.classList.add("hidden");
+  obedience2ModalEl.setAttribute("aria-hidden", "true");
+  render();
+});
+
+closeObedience3ButtonEl.addEventListener("click", () => {
+  playClickSound();
+  obedience3ModalEl.classList.add("hidden");
+  obedience3ModalEl.setAttribute("aria-hidden", "true");
+  render();
+});
+
+closeObedienceCompleteButtonEl.addEventListener("click", () => {
+  playClickSound();
+  obedienceCompleteModalEl.classList.add("hidden");
+  obedienceCompleteModalEl.setAttribute("aria-hidden", "true");
+  assignFreeplayTask();
+  render();
+});
+
 gameWinRestartButtonEl.addEventListener("click", () => {
   playClickSound();
   showGameWinModal(false);
@@ -527,7 +659,10 @@ function randomFromWeighted(weights) {
 }
 
 function getRandomJobFunction() {
-  return randomFromList(JOB_FUNCTIONS);
+  const roles = state.newDepartmentsUnlocked
+    ? [...JOB_FUNCTIONS, ...NEW_JOB_FUNCTIONS]
+    : JOB_FUNCTIONS;
+  return randomFromList(roles);
 }
 
 function getDepartmentName(role) {
@@ -560,9 +695,10 @@ function getDistance(aIndex, bIndex) {
 function getEmptyIndices() {
   const baseActive = state.tutorialComplete ? [3, 4, 5, 9, 10, 11, 15, 16, 17] : [4, 5, 10, 11];
   const expandedActive = state.boardExpanded ? [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 20, 21, 22, 23] : baseActive;
+  const allActive = state.newDepartmentsUnlocked ? Array.from({ length: BOARD_SIZE }, (_, i) => i) : expandedActive;
   return state.grid
     .map((entity, index) => (entity ? -1 : index))
-    .filter((index) => index !== -1 && expandedActive.includes(index));
+    .filter((index) => index !== -1 && allActive.includes(index));
 }
 
 function getNearestEmptyIndexToIndex(originIndex) {
@@ -727,9 +863,15 @@ function openSkillWorkerModal(index) {
     return;
   }
   const exchangeFunds = getSkillWorkerExchangeFunds(entity.level);
+  const hasEnoughTokens = state.tokens >= SKILL_WORKER_EXCHANGE_TOKEN;
+  const hasEnoughDecisionPoints = state.decisionPoints >= 1;
+  const tokenWarning = hasEnoughTokens ? "" : `\n⚠️ Token不足（需要${SKILL_WORKER_EXCHANGE_TOKEN}点）！`;
+  const decisionPointWarning = hasEnoughDecisionPoints ? "" : "\n⚠️ 决策点不足（需要1点）！";
   skillWorkerModalTextEl.textContent =
-    `将消耗 ${SKILL_WORKER_EXCHANGE_TOKEN} Token，换取 ${exchangeFunds} 点公司资金。` +
-    ` 当前是 Lv.${entity.level}，等级越高越划算。`;
+    `将消耗 ${SKILL_WORKER_EXCHANGE_TOKEN} Token 和 1 决策点，换取 ${exchangeFunds} 点公司资金。` +
+    ` 当前是 Lv.${entity.level}，等级越高越划算。` +
+    tokenWarning +
+    decisionPointWarning;
   state.pendingSkillWorkerIndex = index;
   skillWorkerModalEl.classList.remove("hidden");
   skillWorkerModalEl.setAttribute("aria-hidden", "false");
@@ -1149,11 +1291,9 @@ function isSelectedTalentUpgradeable() {
 function getRoleIcon(entity) {
   if (!entity || !entity.role) return null;
   const baseIcon = TALENT_META[entity.level]?.icon?.split(" ")[0] || "";
-  if (entity.role === "运营") {
-    return baseIcon + " 📊";
-  }
-  if (entity.role === "行政") {
-    return baseIcon + " 📋";
+  const roleIcon = ROLE_ICONS[entity.role];
+  if (roleIcon) {
+    return baseIcon + " " + roleIcon;
   }
   return null;
 }
@@ -1167,7 +1307,7 @@ function getEntityVisualMeta(entity) {
     let iconText;
     if (entity.role) {
       const basePersonIcon = baseIcon.split(" ")[0] || "";
-      const roleIcon = entity.role === "运营" ? "📊" : "📋";
+      const roleIcon = ROLE_ICONS[entity.role] || "";
       iconText = [basePersonIcon, roleIcon, attrIcon].filter(Boolean).join(" ");
     } else {
       iconText = [baseIcon, attrIcon].filter(Boolean).join(" ");
@@ -1179,6 +1319,10 @@ function getEntityVisualMeta(entity) {
       colorClass = `role-ops-${entity.level}`;
     } else if (entity.role === "行政") {
       colorClass = `role-admin-${entity.level}`;
+    } else if (entity.role === "财务") {
+      colorClass = `role-finance-${entity.level}`;
+    } else if (entity.role === "设计") {
+      colorClass = `role-design-${entity.level}`;
     }
     return {
       ...baseMeta,
@@ -1196,7 +1340,7 @@ function getEntityVisualMeta(entity) {
     let iconText;
     if (entity.role) {
       const basePersonIcon = baseIcon.split(" ")[0] || "";
-      const roleIcon = entity.role === "运营" ? "📊" : "📋";
+      const roleIcon = ROLE_ICONS[entity.role] || "";
       iconText = [basePersonIcon, roleIcon, attrIcon].filter(Boolean).join(" ");
     } else {
       iconText = [baseIcon, attrIcon].filter(Boolean).join(" ");
@@ -1208,6 +1352,10 @@ function getEntityVisualMeta(entity) {
       colorClass = `role-ops-pool-${entity.level}`;
     } else if (entity.role === "行政") {
       colorClass = `role-admin-pool-${entity.level}`;
+    } else if (entity.role === "财务") {
+      colorClass = `role-finance-pool-${entity.level}`;
+    } else if (entity.role === "设计") {
+      colorClass = `role-design-pool-${entity.level}`;
     }
     return {
       ...baseMeta,
@@ -1287,6 +1435,21 @@ function getTaskProgress(task = state.currentTask) {
 
   if (objective.type === "exchange_skill_worker") {
     return state.totalSkillWorkerExchanges || 0;
+  }
+
+  if (objective.type === "buy_car") {
+    const carCount = state.parkingCars.filter((c) => c.id === objective.carId).length;
+    return carCount;
+  }
+
+  if (objective.type === "buy_model") {
+    return state.bossModels.length;
+  }
+
+  if (objective.type === "buy_new_role_pool") {
+    const newRoles = ["财务", "设计"];
+    const newRolePools = state.grid.filter((entity) => entity && entity.type === "pool" && newRoles.includes(entity.role));
+    return newRolePools.length;
   }
 
   return 0;
@@ -1529,6 +1692,32 @@ function submitCurrentTask() {
     }
     render();
     return;
+  } else if (state.currentTask.id.startsWith("obedience-")) {
+    state.obedienceTrainingIndex += 1;
+    if (state.obedienceTrainingIndex >= OBEDIENCE_TRAINING_TASKS.length) {
+      state.obedienceTrainingComplete = true;
+      state.newDepartmentsUnlocked = true;
+      state.boardExpanded = true;
+      state.totalUnlockedCells = BOARD_SIZE;
+      state.fundTargetActive = false;
+      addLog("服从训练全部完成！财务部和设计部权限已开放，棋盘全部解锁！");
+      showObedienceCompleteModal(true);
+    } else {
+      const nextTask = OBEDIENCE_TRAINING_TASKS[state.obedienceTrainingIndex];
+      state.currentTask = { ...nextTask };
+      state.decisionPoints = state.currentTask.decisionPoints;
+      if (nextTask.id === "obedience-2") {
+        state.companyFunds += 20;
+        addLog("公司资金 +20，用于老板的嫩模开销。");
+        showObedience2Modal(true);
+      } else if (nextTask.id === "obedience-3") {
+        state.companyFunds += 5;
+        addLog("公司资金 +5，用于采购新部门人才库。");
+        showObedience3Modal(true);
+      }
+    }
+    render();
+    return;
   } else {
     assignFreeplayTask();
   }
@@ -1681,6 +1870,29 @@ const SPECIALIZED_POOL_ITEMS = JOB_FUNCTIONS.map((role) => ({
   costLabel: "1 决策点 + 1 资金",
   description: `采购一个 1 级${role}人才库，放入暂存区后可稳定产出${role}人才。`,
   isDisabled: () => !state.specializationUnlocked || state.decisionPoints < 1 || state.companyFunds < 1 || state.isGameOver,
+  use: () => {
+    if (!spendDecisionPoint(1, `采购${role}人才库`)) {
+      render();
+      return;
+    }
+    if (!spendCompanyFunds(1, `采购${role}人才库`)) {
+      state.decisionPoints += 1;
+      render();
+      return;
+    }
+    state.stash.push(createEntity("pool", 1, { role }));
+    addLog(`${role}人才库已加入暂存区，点击即可自动部署到棋盘并稳定生产对应职能人才。`);
+    render();
+  }
+}));
+
+const NEW_DEPARTMENT_POOL_ITEMS = NEW_JOB_FUNCTIONS.map((role) => ({
+  id: `buy-pool-${role}`,
+  name: `${role}人才库`,
+  costLabel: "1 决策点 + 1 资金",
+  description: `采购一个 1 级${role}人才库，放入暂存区后可稳定产出${role}人才。`,
+  isDisabled: () => !state.newDepartmentsUnlocked || state.decisionPoints < 1 || state.companyFunds < 1 || state.isGameOver,
+  isVisible: () => state.newDepartmentsUnlocked,
   use: () => {
     if (!spendDecisionPoint(1, `采购${role}人才库`)) {
       render();
@@ -1930,7 +2142,8 @@ function handleBoardDrop(rawData, toIndex) {
 
   const baseActive = state.tutorialComplete ? [3, 4, 5, 9, 10, 11, 15, 16, 17] : [4, 5, 10, 11];
   const expandedActive = state.boardExpanded ? [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 20, 21, 22, 23] : baseActive;
-  if (!expandedActive.includes(toIndex)) {
+  const allActive = state.newDepartmentsUnlocked ? Array.from({ length: BOARD_SIZE }, (_, i) => i) : expandedActive;
+  if (!allActive.includes(toIndex)) {
     addLog("该区域尚未解锁。", "warning");
     return;
   }
@@ -1963,7 +2176,7 @@ function handleBoardDrop(rawData, toIndex) {
     return;
   }
 
-  if (!expandedActive.includes(toIndex)) {
+  if (!allActive.includes(toIndex)) {
     addLog("该区域尚未解锁。", "warning");
     return;
   }
@@ -2139,10 +2352,9 @@ function getEntityLabel(entity) {
 function renderBoard() {
   boardEl.innerHTML = "";
 
-  const maxCells = state.tutorialComplete ? (state.boardExpanded ? 25 : 9) : 4;
   const baseActive = state.tutorialComplete ? [3, 4, 5, 9, 10, 11, 15, 16, 17] : [4, 5, 10, 11];
   const expandedActive = state.boardExpanded ? [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 20, 21, 22, 23] : baseActive;
-  const activeIndices = expandedActive;
+  const activeIndices = state.newDepartmentsUnlocked ? Array.from({ length: BOARD_SIZE }, (_, i) => i) : expandedActive;
 
   state.grid.forEach((entity, index) => {
     const isActiveCell = activeIndices.includes(index);
@@ -2232,7 +2444,8 @@ function renderTask() {
   taskPanelEl.classList.toggle("tutorial-flash",
     (!state.tutorialComplete && state.currentTask.id.startsWith("tutorial-")) ||
     (!state.businessTrainingComplete && state.currentTask.id.startsWith("business-")) ||
-    state.currentTask.id.startsWith("business2-")
+    state.currentTask.id.startsWith("business2-") ||
+    state.currentTask.id.startsWith("obedience-")
   );
 
   const objective = state.currentTask.objective;
@@ -2244,6 +2457,7 @@ function renderTask() {
   const totalFreeplayTasks = FREEPLAY_TASKS.length;
   const remainingBusiness = BUSINESS_TRAINING_TASKS.length - state.businessTrainingIndex;
   const remainingBusiness2 = BUSINESS_TRAINING_TASKS_2.length - state.businessTraining2Index;
+  const remainingObedience = OBEDIENCE_TRAINING_TASKS.length - state.obedienceTrainingIndex;
   
   if (!state.tutorialComplete && state.currentTask.id.startsWith("tutorial-")) {
     taskSubtitleEl.textContent = `入职培训 · ${state.currentTask.title}（剩余 ${remainingTutorials} 关）`;
@@ -2251,6 +2465,8 @@ function renderTask() {
     taskSubtitleEl.textContent = `业务培训 · ${state.currentTask.title}（剩余 ${remainingBusiness} 关）`;
   } else if (state.currentTask.id.startsWith("business2-")) {
     taskSubtitleEl.textContent = `业务培训扩大 · ${state.currentTask.title}（剩余 ${remainingBusiness2} 关）`;
+  } else if (state.currentTask.id.startsWith("obedience-")) {
+    taskSubtitleEl.textContent = `服从训练 · ${state.currentTask.title}（剩余 ${remainingObedience} 关）`;
   } else if (state.fundTargetActive) {
     taskSubtitleEl.textContent = `自由任务 · 第 ${state.freeplayTaskIndex || 1} 关 | 公司资金目标：${state.companyFunds} / ${state.fundTarget}`;
   } else {
@@ -2328,6 +2544,22 @@ function renderShop() {
       shopListEl.appendChild(button);
     });
   }
+
+  if (state.newDepartmentsUnlocked) {
+    NEW_DEPARTMENT_POOL_ITEMS.forEach((item) => {
+      const button = template.content.firstElementChild.cloneNode(true);
+      button.id = item.id;
+      button.querySelector(".shop-title").textContent = item.name;
+      button.querySelector(".shop-cost").textContent = item.costLabel;
+      button.querySelector(".shop-desc").textContent = item.description;
+      button.disabled = item.isDisabled();
+      button.addEventListener("click", () => {
+        playClickSound();
+        item.use();
+      });
+      shopListEl.appendChild(button);
+    });
+  }
 }
 
 function renderPoolStore() {
@@ -2351,19 +2583,166 @@ function render() {
   renderBoard();
   renderShop();
   renderDistillPanel();
+  renderParking();
+  renderModelPanel();
 
-  if (state.fundTargetActive && state.companyFunds >= state.fundTarget && !state.isGameOver) {
-    state.isGameOver = true;
-    showGameWinModal(true);
+  if (state.fundTargetActive && state.companyFunds >= state.fundTarget && !state.isGameOver && !state.obedienceTrainingComplete && state.obedienceTrainingIndex === 0) {
+    state.obedienceTrainingIndex = 0;
+    state.currentTask = { ...OBEDIENCE_TRAINING_TASKS[0] };
+    state.decisionPoints = state.currentTask.decisionPoints;
+    showBossCarModal(true);
   }
 
   const isBusiness3 = state.currentTask && state.currentTask.id === "business-3";
   const isBusiness2_1 = state.currentTask && state.currentTask.id === "business2-1";
-  const showShop = isBusiness3 || isBusiness2_1 || state.businessTrainingComplete;
+  const isObedience3 = state.currentTask && state.currentTask.id === "obedience-3";
+  const showShop = isBusiness3 || isBusiness2_1 || state.businessTrainingComplete || isObedience3 || state.obedienceTrainingComplete;
   if (showShop) {
     openShopButtonEl.classList.remove("hidden");
   } else {
     openShopButtonEl.classList.add("hidden");
+  }
+}
+
+function renderParking() {
+  const shouldShow = state.fundTargetActive || state.bossCarModalShown;
+  if (shouldShow) {
+    parkingPanelEl.classList.remove("hidden");
+  } else {
+    parkingPanelEl.classList.add("hidden");
+  }
+
+  parkingLotEl.innerHTML = "";
+  state.parkingCars.forEach((car) => {
+    const carEl = document.createElement("div");
+    carEl.className = "parking-car";
+    carEl.textContent = car.emoji;
+    carEl.title = car.name;
+    parkingLotEl.appendChild(carEl);
+  });
+}
+
+function renderCarShop() {
+  carShopListEl.innerHTML = "";
+  CAR_SHOP_ITEMS.forEach((car) => {
+    const canAfford = state.companyFunds >= car.price;
+    const itemEl = document.createElement("div");
+    itemEl.className = "car-item" + (canAfford ? "" : " disabled");
+    itemEl.innerHTML = `
+      <span class="car-emoji">${car.emoji}</span>
+      <div class="car-info">
+        <span class="car-name">${car.name}</span>
+        <span class="car-price">${car.price} 公司资金</span>
+      </div>
+    `;
+    if (canAfford) {
+      itemEl.addEventListener("click", () => {
+        playClickSound();
+        buyCar(car);
+      });
+    }
+    carShopListEl.appendChild(itemEl);
+  });
+}
+
+function buyCar(car) {
+  if (state.companyFunds < car.price) {
+    addLog(`公司资金不足，无法购买 ${car.name}`, "warning");
+    return;
+  }
+  state.companyFunds -= car.price;
+  state.parkingCars.push({ id: car.id, name: car.name, emoji: car.emoji });
+  addLog(`成功购买 ${car.name} ${car.emoji}！`);
+  carShopModalEl.classList.add("hidden");
+  carShopModalEl.setAttribute("aria-hidden", "true");
+  render();
+  animateModalEntrance(parkingPanelEl);
+}
+
+function showBossCarModal(visible) {
+  bossCarModalEl.classList.toggle("hidden", !visible);
+  bossCarModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(bossCarModalEl);
+  }
+}
+
+function renderModelPanel() {
+  const shouldShow = state.obedienceTrainingIndex >= 1 || state.bossModels.length > 0;
+  if (shouldShow) {
+    modelPanelEl.classList.remove("hidden");
+  } else {
+    modelPanelEl.classList.add("hidden");
+  }
+
+  modelLotEl.innerHTML = "";
+  state.bossModels.forEach((model) => {
+    const modelEl = document.createElement("div");
+    modelEl.className = "parking-car";
+    modelEl.textContent = model.emoji;
+    modelEl.title = model.name;
+    modelLotEl.appendChild(modelEl);
+  });
+}
+
+function renderModelShop() {
+  modelShopListEl.innerHTML = "";
+  MODEL_SHOP_ITEMS.forEach((model) => {
+    const canAfford = state.companyFunds >= model.price;
+    const itemEl = document.createElement("div");
+    itemEl.className = "car-item" + (canAfford ? "" : " disabled");
+    itemEl.innerHTML = `
+      <span class="car-emoji">${model.emoji}</span>
+      <div class="car-info">
+        <span class="car-name">${model.name}</span>
+        <span class="car-price">${model.price} 公司资金</span>
+      </div>
+    `;
+    if (canAfford) {
+      itemEl.addEventListener("click", () => {
+        playClickSound();
+        buyModel(model);
+      });
+    }
+    modelShopListEl.appendChild(itemEl);
+  });
+}
+
+function buyModel(model) {
+  if (state.companyFunds < model.price) {
+    addLog(`公司资金不足，无法召唤 ${model.name}`, "warning");
+    return;
+  }
+  state.companyFunds -= model.price;
+  state.bossModels.push({ id: model.id, name: model.name, emoji: model.emoji });
+  addLog(`成功召唤 ${model.name} ${model.emoji}！`);
+  modelShopModalEl.classList.add("hidden");
+  modelShopModalEl.setAttribute("aria-hidden", "true");
+  render();
+  animateModalEntrance(modelPanelEl);
+}
+
+function showObedience2Modal(visible) {
+  obedience2ModalEl.classList.toggle("hidden", !visible);
+  obedience2ModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(obedience2ModalEl);
+  }
+}
+
+function showObedience3Modal(visible) {
+  obedience3ModalEl.classList.toggle("hidden", !visible);
+  obedience3ModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(obedience3ModalEl);
+  }
+}
+
+function showObedienceCompleteModal(visible) {
+  obedienceCompleteModalEl.classList.toggle("hidden", !visible);
+  obedienceCompleteModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(obedienceCompleteModalEl);
   }
 }
 
@@ -2413,6 +2792,12 @@ function restartGame() {
   state.lastInteractionAt = Date.now();
   state.poolCooldowns = new Map();
   state.fundTargetActive = false;
+  state.parkingCars = [];
+  state.bossCarModalShown = false;
+  state.obedienceTrainingIndex = 0;
+  state.obedienceTrainingComplete = false;
+  state.bossModels = [];
+  state.newDepartmentsUnlocked = false;
 
   if (!state.tutorialComplete && state.tutorialIndex === 0) {
     state.stash.push(createEntity("pool", 1));
@@ -2425,6 +2810,10 @@ function restartGame() {
   showBusinessTrainingCompleteModal(false);
   showBusinessTraining2Modal(false);
   showFundTargetModal(false);
+  showBossCarModal(false);
+  showObedience2Modal(false);
+  showObedience3Modal(false);
+  showObedienceCompleteModal(false);
   showGameWinModal(false);
   closeSkillWorkerModal();
   closeTransferModal();
