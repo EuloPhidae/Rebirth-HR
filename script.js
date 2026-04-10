@@ -9,12 +9,16 @@ const SKILL_WORKER_COST = 30;
 const SKILL_WORKER_EXCHANGE_TOKEN = 6;
 const KPI_TO_ACTION_COST = 10;
 const SPECIALIZATION_UNLOCK_AFTER_TASKS = 2;
-const TRANSFER_COST = 1;
 const POOL_COOLDOWN_MS = 200;
 const gsapApi = window.gsap ?? null;
 const interactApi = window.interact ?? null;
 const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 let enhancedInteractionsBound = false;
+
+function getTransferCost(level) {
+  const rates = [0, 1, 2, 3, 5, 8];
+  return rates[level] || Math.max(1, Math.ceil(level * 1.5));
+}
 
 const JOB_FUNCTIONS = ["运营", "行政"];
 const DEPARTMENTS = ["运营部", "行政部"];
@@ -204,6 +208,15 @@ const BUSINESS_TRAINING_TASKS_2 = [
     objective: { type: "buy_role_pool", role: "运营", count: 1 }
   },
   {
+    id: "business2-1-5",
+    decisionPoints: 4,
+    title: "业务培训 2-1.5",
+    description: "🦹‍♂️高层管理：很好。接下来学习更重要的管理技能：转岗。\n双击任意员工，打开转岗菜单，把他转到另一个职能。\n注意：员工等级越高，转岗消耗的公司资金越多。",
+    rewardText: "奖励：职业技巧与你的个人成长",
+    rewardKpi: 12,
+    objective: { type: "transfer_count", count: 1 }
+  },
+  {
     id: "business2-2",
     decisionPoints: 3,
     title: "业务培训 2-2",
@@ -251,9 +264,12 @@ const state = {
   businessTrainingComplete: false,
   businessTraining2Index: 0,
   businessTraining2Complete: false,
+  fundTargetPending: false,
+  postBusinessTraining2Freeplay: 0,
   freeplayAfterBusinessTraining: 0,
   totalSkillWorkerExchanges: 0,
   totalExchanged: 0,
+  transfersThisTask: 0,
   boardExpanded: false,
   pendingSkillWorkerIndex: null,
   pendingTransferIndex: null,
@@ -267,6 +283,7 @@ const state = {
   obedienceTrainingComplete: false,
   bossModels: [],
   newDepartmentsUnlocked: false,
+  newDepartmentPoolsUnlocked: false,
   goldExchangeFirstTime: true
 };
 
@@ -510,7 +527,6 @@ closeBusinessTraining2ButtonEl.addEventListener("click", () => {
 closeFundTargetButtonEl.addEventListener("click", () => {
   playClickSound();
   showFundTargetModal(false);
-  assignFreeplayTask();
   render();
 });
 
@@ -969,20 +985,22 @@ function openTransferModal(index) {
   }
 
   state.pendingTransferIndex = index;
+  const cost = getTransferCost(entity.level);
   transferModalTextEl.textContent =
     `当前员工是 ${getTalentDisplayName(entity.level, entity.role)}。` +
-    ` 选择一个新职能，消耗 ${TRANSFER_COST} 点公司资金完成转岗。`;
+    ` 选择一个新职能，消耗 ${cost} 点公司资金完成转岗。`;
 
   transferOptionsEl.innerHTML = "";
-  JOB_FUNCTIONS.filter((role) => role !== entity.role).forEach((role) => {
+  const rolePool = state.newDepartmentsUnlocked ? [...JOB_FUNCTIONS, ...NEW_JOB_FUNCTIONS] : JOB_FUNCTIONS;
+  rolePool.filter((role) => role !== entity.role).forEach((role) => {
     const button = document.createElement("button");
     button.className = "shop-item";
     button.innerHTML = `
       <span class="shop-title">${role}转岗</span>
-      <span class="shop-cost">${TRANSFER_COST} 资金</span>
+      <span class="shop-cost">${cost} 资金</span>
       <small class="shop-desc">把当前员工转为 ${role} 职能。</small>
     `;
-    button.disabled = state.companyFunds < TRANSFER_COST || state.isGameOver;
+    button.disabled = state.companyFunds < cost || state.isGameOver;
     button.addEventListener("click", () => {
       playClickSound();
       confirmTransferRole(role);
@@ -1178,6 +1196,7 @@ function initializeEnhancedInteractions() {
         event.target.dataset.dragX = "0";
         event.target.dataset.dragY = "0";
         event.target.classList.add("is-dragging");
+        document.body.classList.add("is-dragging-card");
       },
       move(event) {
         const x = (Number(event.target.dataset.dragX) || 0) + event.dx;
@@ -1193,6 +1212,7 @@ function initializeEnhancedInteractions() {
         target.style.transform = "";
         target.dataset.dragX = "0";
         target.dataset.dragY = "0";
+        document.body.classList.remove("is-dragging-card");
 
         if (dropIndex === null) {
           return;
@@ -1515,6 +1535,10 @@ function getTaskProgress(task = state.currentTask) {
     return state.totalSkillWorkerExchanges || 0;
   }
 
+  if (objective.type === "transfer_count") {
+    return state.transfersThisTask || 0;
+  }
+
   if (objective.type === "buy_car") {
     const carCount = state.parkingCars.filter((c) => c.id === objective.carId).length;
     return carCount;
@@ -1550,6 +1574,7 @@ function getCurrentTaskRewardText() {
 function assignTutorialTask() {
   state.currentTask = { ...TUTORIAL_TASKS[state.tutorialIndex] };
   state.decisionPoints = state.currentTask.decisionPoints;
+  state.transfersThisTask = 0;
   clearSelection();
 }
 
@@ -1596,6 +1621,7 @@ function assignFreeplayTask() {
   state.decisionPoints = state.currentTask.decisionPoints;
   state.freeplayTaskIndex += 1;
   state.usedSkillWorkerIndices = new Set();
+  state.transfersThisTask = 0;
   clearSelection();
 }
 
@@ -1648,12 +1674,13 @@ function finishTutorial() {
   showTutorialCompleteModal(true);
 }
 
-function consumeSubmittedTalents(task) {
-  if (task.objective.type !== "talent_level_count") {
-    return;
+function collectSubmittedTalents(task) {
+  if (!task || task.objective.type !== "talent_level_count") {
+    return [];
   }
 
   let remaining = task.objective.count;
+  const collected = [];
   for (let index = 0; index < state.grid.length && remaining > 0; index += 1) {
     const entity = state.grid[index];
     if (!entity || entity.type !== "talent" || entity.level !== task.objective.level) {
@@ -1665,9 +1692,18 @@ function consumeSubmittedTalents(task) {
     if (task.objective.role && entity.role !== task.objective.role) {
       continue;
     }
-    state.grid[index] = null;
+    collected.push({ index, entity });
     remaining -= 1;
   }
+  return collected;
+}
+
+function consumeSubmittedTalents(task) {
+  const submitted = collectSubmittedTalents(task);
+  submitted.forEach(({ index }) => {
+    state.grid[index] = null;
+  });
+  return submitted;
 }
 
 function playWinSound() {
@@ -1686,7 +1722,20 @@ function submitCurrentTask() {
     return;
   }
 
+  const submittedTalents = collectSubmittedTalents(state.currentTask);
+  const submissionsWithRects = submittedTalents.map(({ index, entity }) => {
+    const sourceRect =
+      boardEl.querySelector(`[data-index="${index}"] .talent-card`)?.getBoundingClientRect() ??
+      boardEl.querySelector(`[data-index="${index}"]`)?.getBoundingClientRect() ??
+      null;
+    return sourceRect ? { rect: sourceRect, entity } : null;
+  }).filter(Boolean);
+
   consumeSubmittedTalents(state.currentTask);
+  if (submissionsWithRects.length > 0) {
+    renderBoard();
+    animateSubmittedTalentsToTaskPanel(submissionsWithRects);
+  }
   playWinSound();
 
   if (!state.tutorialComplete) {
@@ -1704,12 +1753,45 @@ function submitCurrentTask() {
   state.kpi += state.currentTask.rewardKpi;
   addLog(`需求提交成功，KPI +${state.currentTask.rewardKpi}。`);
   state.completedFreeplayTasks += 1;
-  
+
+  if (state.fundTargetPending) {
+    state.postBusinessTraining2Freeplay += 1;
+    if (state.postBusinessTraining2Freeplay >= 2) {
+      state.fundTargetPending = false;
+      state.postBusinessTraining2Freeplay = 0;
+      state.fundTargetActive = true;
+      state.bossCarModalShown = false;
+      assignFreeplayTask();
+      showFundTargetModal(true);
+      render();
+      return;
+    }
+  }
+
+  if (
+    state.fundTargetActive &&
+    state.companyFunds >= state.fundTarget &&
+    !state.isGameOver &&
+    !state.obedienceTrainingComplete &&
+    state.obedienceTrainingIndex === 0 &&
+    !state.bossCarModalShown
+  ) {
+    state.bossCarModalShown = true;
+    state.fundTargetActive = false;
+    state.usedSkillWorkerIndices = new Set();
+    state.currentTask = { ...OBEDIENCE_TRAINING_TASKS[0] };
+    state.decisionPoints = state.currentTask.decisionPoints;
+    showBossCarModal(true);
+    render();
+    return;
+  }
+   
   if (!state.specializationUnlocked && !state.businessTrainingComplete && state.completedFreeplayTasks >= SPECIALIZATION_UNLOCK_AFTER_TASKS) {
     if (!state.currentTask.id.startsWith("business-")) {
       state.usedSkillWorkerIndices = new Set();
       state.currentTask = { ...BUSINESS_TRAINING_TASKS[0] };
       state.decisionPoints = state.currentTask.decisionPoints;
+      state.transfersThisTask = 0;
       state.businessRecruitCount = 0;
       state.totalExchanged = 0;
       state.stash.push(createEntity("pool", 1));
@@ -1724,6 +1806,7 @@ function submitCurrentTask() {
       state.usedSkillWorkerIndices = new Set();
       state.currentTask = { ...BUSINESS_TRAINING_TASKS_2[0] };
       state.decisionPoints = state.currentTask.decisionPoints;
+      state.transfersThisTask = 0;
       showBusinessTraining2Modal(true);
       render();
       return;
@@ -1758,12 +1841,15 @@ function submitCurrentTask() {
       state.businessTraining2Index += 1;
       if (state.businessTraining2Index >= BUSINESS_TRAINING_TASKS_2.length) {
         state.businessTraining2Complete = true;
-        state.fundTargetActive = true;
-        showFundTargetModal(true);
+        state.fundTargetPending = true;
+        state.postBusinessTraining2Freeplay = 0;
+        addLog("业务培训扩大完成：先完成 2 个自由任务，再接受老板的资金目标。");
+        assignFreeplayTask();
       } else {
         state.usedSkillWorkerIndices = new Set();
         state.currentTask = { ...BUSINESS_TRAINING_TASKS_2[state.businessTraining2Index] };
         state.decisionPoints = state.currentTask.decisionPoints;
+        state.transfersThisTask = 0;
       }
     } else {
       showBusinessTraining2Modal(true);
@@ -1891,12 +1977,14 @@ function confirmTransferRole(role) {
     closeTransferModal();
     return;
   }
-  if (!spendCompanyFunds(TRANSFER_COST, "员工转岗")) {
+  const cost = getTransferCost(entity.level);
+  if (!spendCompanyFunds(cost, "员工转岗")) {
     render();
     return;
   }
 
   state.grid[index] = { ...entity, role };
+  state.transfersThisTask += 1;
   addLog(`${TALENT_META[entity.level].name} 已转岗为 ${getTalentDisplayName(entity.level, role)}。`);
   closeTransferModal();
   render();
@@ -1969,8 +2057,8 @@ const NEW_DEPARTMENT_POOL_ITEMS = NEW_JOB_FUNCTIONS.map((role) => ({
   name: `${role}人才库`,
   costLabel: "1 决策点 + 1 资金",
   description: `采购一个 1 级${role}人才库，放入暂存区后可稳定产出${role}人才。`,
-  isDisabled: () => !state.newDepartmentsUnlocked || state.decisionPoints < 1 || state.companyFunds < 1 || state.isGameOver,
-  isVisible: () => state.newDepartmentsUnlocked,
+  isDisabled: () => !(state.newDepartmentsUnlocked || (state.currentTask && state.currentTask.id === "obedience-3")) || state.decisionPoints < 1 || state.companyFunds < 1 || state.isGameOver,
+  isVisible: () => state.newDepartmentsUnlocked || (state.currentTask && state.currentTask.id === "obedience-3"),
   use: () => {
     if (!spendDecisionPoint(1, `采购${role}人才库`)) {
       render();
@@ -2161,6 +2249,7 @@ function mergeEntities(fromIndex, toIndex) {
   state.grid[toIndex] = createEntity(source.type, nextLevel, source.type === "pool" ? poolExtra : extra);
 
   let goldSpawned = false;
+  let goldSpawnIndex = -1;
   if (source.type === "talent" && Math.random() < 0.3) {
     const roll = Math.random();
     let goldLevel;
@@ -2171,9 +2260,10 @@ function mergeEntities(fromIndex, toIndex) {
     } else {
       goldLevel = 3;
     }
-    const spawnIndex = getFirstEmptyIndex();
-    if (spawnIndex !== -1) {
-      state.grid[spawnIndex] = createEntity("gold", goldLevel);
+    goldSpawnIndex = getFirstEmptyIndex();
+    if (goldSpawnIndex !== -1) {
+      state.grid[goldSpawnIndex] = createEntity("gold", goldLevel);
+      state.incomingCells.add(goldSpawnIndex);
       goldSpawned = true;
       addLog(`合成意外产出金币 Lv.${goldLevel}！`);
     }
@@ -2193,7 +2283,8 @@ function mergeEntities(fromIndex, toIndex) {
   render();
   animateCell(toIndex);
   if (goldSpawned) {
-    animateCell(spawnIndex);
+    const sourceRect = boardEl.querySelector(`[data-index="${toIndex}"] .talent-card`)?.getBoundingClientRect() ?? null;
+    animateGoldSpawnFromMerge(sourceRect, goldSpawnIndex, state.grid[goldSpawnIndex]);
   }
   return true;
 }
@@ -2229,7 +2320,11 @@ function handleCellClick(index) {
   }
 
   if (entity.type === "skillWorker") {
-    addLog("双击 员工.Skill 可以弹出确认框，用 Token 换取公司资金。");
+    if (state.usedSkillWorkerIndices.has(index)) {
+      addLog("该员工.Skill 本任务已兑换过。", "warning");
+      return;
+    }
+    openSkillWorkerModal(index);
     return;
   }
 
@@ -2451,6 +2546,174 @@ function animateRecruitFromPool(sourceRect, toIndex, entity) {
   }
 }
 
+function animateGoldSpawnFromMerge(sourceRect, toIndex, goldEntity) {
+  if (!goldEntity || goldEntity.type !== "gold") {
+    state.incomingCells.delete(toIndex);
+    renderBoard();
+    animateCell(toIndex, "pool-spawn");
+    return;
+  }
+
+  if (prefersReducedMotion || !sourceRect) {
+    state.incomingCells.delete(toIndex);
+    renderBoard();
+    animateCell(toIndex, "pool-spawn");
+    return;
+  }
+
+  const targetCell = boardEl.querySelector(`[data-index="${toIndex}"]`);
+  if (!targetCell) {
+    state.incomingCells.delete(toIndex);
+    renderBoard();
+    animateCell(toIndex, "pool-spawn");
+    return;
+  }
+
+  const targetRect = targetCell.getBoundingClientRect();
+  const ghost = document.createElement("div");
+  const meta = getEntityVisualMeta(goldEntity);
+  ghost.className = `talent-card recruit-ghost ${meta.colorClass}`;
+  ghost.innerHTML = getEntityCardInnerMarkup(goldEntity);
+  ghost.style.position = "fixed";
+  ghost.style.left = `${sourceRect.left + sourceRect.width / 2 - (targetRect.width - 10) / 2}px`;
+  ghost.style.top = `${sourceRect.top + sourceRect.height / 2 - (targetRect.height - 10) / 2}px`;
+  ghost.style.width = `${targetRect.width - 10}px`;
+  ghost.style.height = `${targetRect.height - 10}px`;
+  ghost.style.pointerEvents = "none";
+  ghost.style.zIndex = "130";
+  document.body.append(ghost);
+
+  const startLeft = sourceRect.left + sourceRect.width / 2 - (targetRect.width - 10) / 2;
+  const startTop = sourceRect.top + sourceRect.height / 2 - (targetRect.height - 10) / 2;
+  const finalLeft = targetRect.left + 5;
+  const finalTop = targetRect.top + 5;
+  const deltaX = finalLeft - startLeft;
+  const deltaY = finalTop - startTop;
+
+  const revealGoldCard = () => {
+    state.incomingCells.delete(toIndex);
+    renderBoard();
+    animateCell(toIndex, "pool-spawn");
+  };
+
+  if (gsapApi) {
+    gsapApi.fromTo(ghost, {
+      x: 0,
+      y: 0,
+      scale: 0.2,
+      opacity: 0.18,
+      rotate: -16
+    }, {
+      x: deltaX,
+      y: deltaY,
+      scale: 1.04,
+      opacity: 1,
+      rotate: 0,
+      duration: 0.28,
+      ease: "back.out(1.55)",
+      onComplete: () => {
+        ghost.remove();
+        revealGoldCard();
+      }
+    });
+  } else {
+    ghost.style.transform = "scale(0.2) rotate(-16deg)";
+    ghost.style.opacity = "0.18";
+    ghost.style.transition = "transform 280ms cubic-bezier(0.22, 1.2, 0.36, 1), opacity 280ms ease";
+    requestAnimationFrame(() => {
+      ghost.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.04) rotate(0deg)`;
+      ghost.style.opacity = "1";
+    });
+    window.setTimeout(() => {
+      ghost.remove();
+      revealGoldCard();
+    }, 300);
+  }
+}
+
+function animateSubmittedTalentsToTaskPanel(submissions) {
+  if (!Array.isArray(submissions) || submissions.length === 0 || prefersReducedMotion) {
+    return;
+  }
+
+  const targetEl = submitTaskButtonEl;
+  if (!targetEl) {
+    return;
+  }
+
+  const targetRect = targetEl.getBoundingClientRect();
+  const targetX = targetRect.left + targetRect.width / 2;
+  const targetY = targetRect.top + targetRect.height / 2;
+
+  submissions.forEach((submission, sequenceIndex) => {
+    const { rect, entity } = submission || {};
+    if (!rect || !entity) {
+      return;
+    }
+
+    const ghost = document.createElement("div");
+    const meta = getEntityVisualMeta(entity);
+    ghost.className = `talent-card recruit-ghost submit-ghost ${meta.colorClass}`;
+    ghost.innerHTML = getEntityCardInnerMarkup(entity);
+    ghost.style.position = "fixed";
+    ghost.style.left = `${rect.left}px`;
+    ghost.style.top = `${rect.top}px`;
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.height = `${rect.height}px`;
+    ghost.style.pointerEvents = "none";
+    ghost.style.zIndex = "160";
+    document.body.append(ghost);
+
+    const startX = rect.left + rect.width / 2;
+    const startY = rect.top + rect.height / 2;
+    const jitterX = (Math.random() - 0.5) * 18;
+    const jitterY = (Math.random() - 0.5) * 14;
+    const deltaX = (targetX - startX) + jitterX;
+    const deltaY = (targetY - startY) + jitterY;
+    const delay = Math.min(sequenceIndex * 0.04, 0.24);
+
+    if (gsapApi) {
+      gsapApi.fromTo(ghost, {
+        x: 0,
+        y: 0,
+        scale: 1,
+        opacity: 1,
+        rotate: 0
+      }, {
+        x: deltaX,
+        y: deltaY,
+        scale: 0.22,
+        opacity: 0,
+        rotate: (Math.random() - 0.5) * 20,
+        duration: 0.32,
+        delay,
+        ease: "power2.in",
+        onComplete: () => ghost.remove()
+      });
+    } else {
+      ghost.style.transform = "translate(0, 0) scale(1)";
+      ghost.style.opacity = "1";
+      ghost.style.transition = `transform 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease`;
+      window.setTimeout(() => {
+        ghost.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.22)`;
+        ghost.style.opacity = "0";
+      }, Math.floor(delay * 1000));
+      window.setTimeout(() => ghost.remove(), Math.floor(delay * 1000) + 360);
+    }
+  });
+
+  window.setTimeout(() => {
+    animateWithGsap(targetEl, { scale: 1, filter: "brightness(1)" }, {
+      scale: 1.03,
+      duration: 0.12,
+      ease: "sine.out",
+      yoyo: true,
+      repeat: 1,
+      clearProps: "transform,filter"
+    });
+  }, 180);
+}
+
 function getEntityLabel(entity) {
   const meta = getEntityVisualMeta(entity);
   return `${meta.name} Lv.${entity.level}`;
@@ -2476,13 +2739,7 @@ function renderBoard() {
       if (state.incomingCells.has(index)) {
         return;
       }
-      if (state.grid[index]?.type === "skillWorker") {
-        if (state.usedSkillWorkerIndices.has(index)) {
-          addLog("该员工.Skill 本任务已兑换过。", "warning");
-          return;
-        }
-        openSkillWorkerModal(index);
-      } else if (state.grid[index]?.type === "gold") {
+      if (state.grid[index]?.type === "gold") {
         openGoldExchangeModal(index);
       } else if (state.grid[index]?.type === "talent" && state.specializationUnlocked) {
         openTransferModal(index);
@@ -2515,6 +2772,10 @@ function renderBoard() {
       if (isMovable && !interactApi) {
         card.addEventListener("dragstart", (event) => {
           event.dataTransfer.setData("text/plain", `cell:${index}`);
+          document.body.classList.add("is-dragging-card");
+        });
+        card.addEventListener("dragend", () => {
+          document.body.classList.remove("is-dragging-card");
         });
       }
       card.innerHTML = getEntityCardInnerMarkup(visibleEntity);
@@ -2686,6 +2947,7 @@ function renderResources() {
 
 function render() {
   renderResources();
+
   renderTask();
   renderStash();
   renderPoolStore();
@@ -2694,13 +2956,6 @@ function render() {
   renderDistillPanel();
   renderParking();
   renderModelPanel();
-
-  if (state.fundTargetActive && state.companyFunds >= state.fundTarget && !state.isGameOver && !state.obedienceTrainingComplete && state.obedienceTrainingIndex === 0) {
-    state.obedienceTrainingIndex = 0;
-    state.currentTask = { ...OBEDIENCE_TRAINING_TASKS[0] };
-    state.decisionPoints = state.currentTask.decisionPoints;
-    showBossCarModal(true);
-  }
 
   const isBusiness3 = state.currentTask && state.currentTask.id === "business-3";
   const isBusiness2_1 = state.currentTask && state.currentTask.id === "business2-1";
@@ -2888,10 +3143,13 @@ function restartGame() {
   state.businessTrainingComplete = false;
   state.businessTraining2Index = 0;
   state.businessTraining2Complete = false;
+  state.fundTargetPending = false;
+  state.postBusinessTraining2Freeplay = 0;
   state.freeplayAfterBusinessTraining = 0;
   state.businessRecruitCount = 0;
   state.totalExchanged = 0;
   state.totalSkillWorkerExchanges = 0;
+  state.transfersThisTask = 0;
   state.boardExpanded = false;
   state.pendingSkillWorkerIndex = null;
   state.pendingTransferIndex = null;
