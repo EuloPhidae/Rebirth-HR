@@ -59,6 +59,13 @@ const ENTITY_META = {
     3: { name: "员工.Skill", icon: "✦", colorClass: "rarity-5" },
     4: { name: "员工.Skill", icon: "✦", colorClass: "rarity-5" },
     5: { name: "员工.Skill", icon: "✦", colorClass: "rarity-5" }
+  },
+  gold: {
+    1: { name: "金币", icon: "🪙", colorClass: "gold-1" },
+    2: { name: "金币", icon: "💰", colorClass: "gold-2" },
+    3: { name: "金币", icon: "💎", colorClass: "gold-3" },
+    4: { name: "金币", icon: "👑", colorClass: "gold-4" },
+    5: { name: "金币", icon: "🏆", colorClass: "gold-5" }
   }
 };
 
@@ -250,6 +257,7 @@ const state = {
   boardExpanded: false,
   pendingSkillWorkerIndex: null,
   pendingTransferIndex: null,
+  pendingGoldIndex: null,
   usedSkillWorkerIndices: new Set(),
   fundTargetActive: false,
   fundTarget: 20,
@@ -258,11 +266,13 @@ const state = {
   obedienceTrainingIndex: 0,
   obedienceTrainingComplete: false,
   bossModels: [],
-  newDepartmentsUnlocked: false
+  newDepartmentsUnlocked: false,
+  goldExchangeFirstTime: true
 };
 
 state.incomingCells = new Set();
 state.mergeHintCells = new Set();
+state.lastMergeHintChange = 0;
 state.lastInteractionAt = Date.now();
 state.poolCooldowns = new Map();
 
@@ -304,6 +314,10 @@ const skillWorkerModalEl = document.querySelector("#skillWorkerModal");
 const skillWorkerModalTextEl = document.querySelector("#skillWorkerModalText");
 const confirmSkillWorkerButtonEl = document.querySelector("#confirmSkillWorkerButton");
 const cancelSkillWorkerButtonEl = document.querySelector("#cancelSkillWorkerButton");
+const goldExchangeModalEl = document.querySelector("#goldExchangeModal");
+const goldExchangeTextEl = document.querySelector("#goldExchangeText");
+const confirmGoldExchangeButtonEl = document.querySelector("#confirmGoldExchangeButton");
+const cancelGoldExchangeButtonEl = document.querySelector("#cancelGoldExchangeButton");
 const transferModalEl = document.querySelector("#transferModal");
 const transferModalTextEl = document.querySelector("#transferModalText");
 const transferOptionsEl = document.querySelector("#transferOptions");
@@ -571,6 +585,16 @@ cancelSkillWorkerButtonEl.addEventListener("click", () => {
 confirmSkillWorkerButtonEl.addEventListener("click", () => {
   playClickSound();
   confirmSkillWorkerExchange();
+});
+
+confirmGoldExchangeButtonEl.addEventListener("click", () => {
+  playClickSound();
+  confirmGoldExchange();
+});
+
+cancelGoldExchangeButtonEl.addEventListener("click", () => {
+  playClickSound();
+  closeGoldExchangeModal();
 });
 
 cancelTransferButtonEl.addEventListener("click", () => {
@@ -882,6 +906,60 @@ function closeSkillWorkerModal() {
   state.pendingSkillWorkerIndex = null;
   skillWorkerModalEl.classList.add("hidden");
   skillWorkerModalEl.setAttribute("aria-hidden", "true");
+}
+
+function getGoldExchangeFunds(level) {
+  const rates = [0, 1, 3, 6, 10, 15];
+  return rates[level] || 0;
+}
+
+function openGoldExchangeModal(index) {
+  const entity = state.grid[index];
+  if (!entity || entity.type !== "gold") {
+    return;
+  }
+
+  if (!state.goldExchangeFirstTime) {
+    state.pendingGoldIndex = index;
+    confirmGoldExchange();
+    return;
+  }
+
+  const exchangeFunds = getGoldExchangeFunds(entity.level);
+  goldExchangeTextEl.textContent =
+    `确定要将 ${entity.level}级金币 兑换为 ${exchangeFunds} 点公司资金吗？\n\n💡 提示：合成的金币等级越高，兑换公司资金的性价比越高！`;
+  state.pendingGoldIndex = index;
+  goldExchangeModalEl.classList.remove("hidden");
+  goldExchangeModalEl.setAttribute("aria-hidden", "false");
+  animateModalEntrance(goldExchangeModalEl);
+}
+
+function closeGoldExchangeModal() {
+  state.pendingGoldIndex = null;
+  goldExchangeModalEl.classList.add("hidden");
+  goldExchangeModalEl.setAttribute("aria-hidden", "true");
+}
+
+function confirmGoldExchange() {
+  const index = state.pendingGoldIndex;
+  const entity = index === null ? null : state.grid[index];
+  if (!entity || entity.type !== "gold") {
+    closeGoldExchangeModal();
+    return;
+  }
+
+  const exchangeFunds = getGoldExchangeFunds(entity.level);
+  state.grid[index] = null;
+  state.companyFunds += exchangeFunds;
+  if (state.goldExchangeFirstTime) {
+    state.goldExchangeFirstTime = false;
+    addLog(`首次金币兑换：${entity.level}级金币 兑换 ${exchangeFunds} 点公司资金！`);
+  } else {
+    addLog(`${entity.level}级金币 兑换 ${exchangeFunds} 点公司资金。`);
+  }
+  closeGoldExchangeModal();
+  render();
+  updateUI();
 }
 
 function openTransferModal(index) {
@@ -1998,7 +2076,12 @@ function getMergeHintIndices() {
     }
   }
 
-  return randomFromList(pairs) ?? [];
+  if (pairs.length === 0) {
+    return [];
+  }
+
+  const shuffled = [...pairs].sort(() => Math.random() - 0.5);
+  return shuffled[0];
 }
 
 function pulseAvailablePools() {
@@ -2023,6 +2106,7 @@ function maybeShowMergeHints() {
     return;
   }
 
+  const now = Date.now();
   const hintIndices = getMergeHintIndices();
   if (hintIndices.length !== 2) {
     return;
@@ -2033,8 +2117,9 @@ function maybeShowMergeHints() {
     state.mergeHintCells.size === nextHints.size &&
     [...nextHints].every((index) => state.mergeHintCells.has(index));
 
-  if (!isSame) {
+  if (!isSame && now - state.lastMergeHintChange >= 5000) {
     state.mergeHintCells = nextHints;
+    state.lastMergeHintChange = now;
     renderBoard();
   }
 }
@@ -2075,19 +2160,41 @@ function mergeEntities(fromIndex, toIndex) {
   state.grid[fromIndex] = null;
   state.grid[toIndex] = createEntity(source.type, nextLevel, source.type === "pool" ? poolExtra : extra);
 
+  let goldSpawned = false;
+  if (source.type === "talent" && Math.random() < 0.3) {
+    const roll = Math.random();
+    let goldLevel;
+    if (roll < 0.7) {
+      goldLevel = 1;
+    } else if (roll < 0.9) {
+      goldLevel = 2;
+    } else {
+      goldLevel = 3;
+    }
+    const spawnIndex = getFirstEmptyIndex();
+    if (spawnIndex !== -1) {
+      state.grid[spawnIndex] = createEntity("gold", goldLevel);
+      goldSpawned = true;
+      addLog(`合成意外产出金币 Lv.${goldLevel}！`);
+    }
+  }
+
   if (source.type === "pool") {
     addLog(`人才库合成成功，获得 Lv.${nextLevel}${source.role ? `${source.role}` : ""}人才库。`);
   } else if (source.type === "skillWorker") {
     addLog(`员工.Skill 合成成功，获得 Lv.${nextLevel}。`);
   } else {
     const attrText = extra.attribute ? ` [${extra.attribute}]` : "";
-    addLog(`合成成功，获得 ${getTalentDisplayName(nextLevel, source.role)}${attrText}。`);
+    addLog(`合成成功，获得 ${getTalentDisplayName(nextLevel, source.role)}${attrText}${goldSpawned ? "，并意外发现金币！" : "。"}`);
   }
 
   playMergeSound();
   state.selectedCell = toIndex;
   render();
   animateCell(toIndex);
+  if (goldSpawned) {
+    animateCell(spawnIndex);
+  }
   return true;
 }
 
@@ -2375,6 +2482,8 @@ function renderBoard() {
           return;
         }
         openSkillWorkerModal(index);
+      } else if (state.grid[index]?.type === "gold") {
+        openGoldExchangeModal(index);
       } else if (state.grid[index]?.type === "talent" && state.specializationUnlocked) {
         openTransferModal(index);
       }
@@ -2788,6 +2897,7 @@ function restartGame() {
   state.pendingTransferIndex = null;
   state.incomingCells = new Set();
   state.mergeHintCells = new Set();
+  state.lastMergeHintChange = 0;
   state.usedSkillWorkerIndices = new Set();
   state.lastInteractionAt = Date.now();
   state.poolCooldowns = new Map();
@@ -2798,6 +2908,7 @@ function restartGame() {
   state.obedienceTrainingComplete = false;
   state.bossModels = [];
   state.newDepartmentsUnlocked = false;
+  state.goldExchangeFirstTime = true;
 
   if (!state.tutorialComplete && state.tutorialIndex === 0) {
     state.stash.push(createEntity("pool", 1));

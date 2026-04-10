@@ -372,6 +372,7 @@ h2 {
 .distill-panel {
   min-width: 0;
   max-width: none;
+  z-index: 0;
 }
 
 .distill-drop-zone {
@@ -386,7 +387,6 @@ h2 {
   transition: all 0.2s ease;
   cursor: pointer;
   position: relative;
-  z-index: 1;
 }
 
 .distill-drop-zone:hover,
@@ -666,8 +666,33 @@ h2 {
     0 10px 18px rgba(15, 23, 42, 0.08);
 }
 
+@keyframes merge-hint-blink {
+  0%, 100% {
+    box-shadow: inset 0 0 0 0 rgba(63, 122, 196, 0);
+    border-color: rgba(63, 122, 196, 0.4);
+  }
+  50% {
+    box-shadow: inset 0 0 0 3px rgba(63, 122, 196, 0.6), 0 0 12px rgba(63, 122, 196, 0.4);
+    border-color: rgba(63, 122, 196, 1);
+  }
+}
+
+@keyframes merge-hint-breathe {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.03);
+    filter: brightness(1.1);
+  }
+}
+
+.merge-hint-cell {
+}
+
 .merge-hint-card {
-  animation: merge-hint-blink 1.3s ease-in-out infinite;
+  animation: merge-hint-breathe 4s ease-in-out infinite;
 }
 
 .stash-card {
@@ -809,6 +834,12 @@ h2 {
 .rarity-4 { background: linear-gradient(180deg, #9ea3d6, #7b82bf); }
 .rarity-5 { background: linear-gradient(180deg, #d8a978, #bf8550); }
 
+.gold-1 { background: linear-gradient(180deg, #ffd700, #daa520); }
+.gold-2 { background: linear-gradient(180deg, #ffc125, #cd9a00); }
+.gold-3 { background: linear-gradient(180deg, #ffb300, #cc9900); }
+.gold-4 { background: linear-gradient(180deg, #ffa500, #cc8400); }
+.gold-5 { background: linear-gradient(180deg, #ff8c00, #e67600); }
+
 .role-ops-1 { background: linear-gradient(180deg, #7eb8e5, #5a9fd4); }
 .role-ops-2 { background: linear-gradient(180deg, #5aa8e0, #3d8bc7); }
 .role-ops-3 { background: linear-gradient(180deg, #3d98db, #2077b8); }
@@ -899,12 +930,6 @@ h2 {
   35% { transform: scale(1.03); }
   70% { transform: scale(0.992); }
   100% { transform: scale(1); }
-}
-
-@keyframes merge-hint-blink {
-  0% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 10px 18px rgba(15, 23, 42, 0.08); }
-  50% { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.22), 0 0 0 3px rgba(63, 122, 196, 0.14), 0 12px 22px rgba(63, 122, 196, 0.18); }
-  100% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 10px 18px rgba(15, 23, 42, 0.08); }
 }
 
 .pool-buttons,
@@ -1223,6 +1248,27 @@ h2 {
   
   .cell {
     border-width: 2px;
+  }
+
+  .checkbox-label {
+    margin: 10px 0;
+    font-size: 13px;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+  }
+
+  .skill-worker-text {
+    margin-bottom: 8px;
+    white-space: pre-wrap;
+  }
+
+  .modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
   }
   
   .pool-button,
