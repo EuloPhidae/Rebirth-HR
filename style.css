@@ -15,6 +15,7 @@
   --shadow: rgba(15, 23, 42, 0.08);
   --cell-size: 128px;
   --cell-gap: 6px;
+  --ui-scale: 0.8;
 }
 
 * {
@@ -206,11 +207,17 @@ h2 {
 .game-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-areas: "main sidebar";
   gap: 20px;
   align-items: start;
 }
 
+.center-column {
+  grid-area: main;
+}
+
 .right-column {
+  grid-area: sidebar;
   display: grid;
   gap: 20px;
   position: relative;
@@ -1230,14 +1237,13 @@ body.is-dragging-card .board-section {
 @media (max-width: 1160px) {
   .game-layout {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "sidebar"
+      "main";
   }
   
   .topbar {
     grid-template-columns: 1fr;
-  }
-  
-  .right-column {
-    order: 0;
   }
 }
 
@@ -1544,5 +1550,32 @@ body.is-dragging-card .board-section {
 
   .car-price {
     font-size: 12px;
+  }
+}
+
+@supports (zoom: 1) {
+  .app-shell,
+  .modal,
+  .toast {
+    zoom: var(--ui-scale);
+  }
+}
+
+@supports not (zoom: 1) {
+  .app-shell {
+    transform: scale(var(--ui-scale));
+    transform-origin: top center;
+  }
+
+  .modal {
+    transform: scale(var(--ui-scale));
+  }
+
+  .toast {
+    transform: translate(-50%, 24px) scale(var(--ui-scale));
+  }
+
+  .toast.show {
+    transform: translate(-50%, 0) scale(var(--ui-scale));
   }
 }

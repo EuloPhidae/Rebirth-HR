@@ -1314,6 +1314,12 @@ function getEventClientPoint(event) {
     : null;
 }
 
+function getUiScale() {
+  const rawValue = getComputedStyle(document.documentElement).getPropertyValue("--ui-scale").trim();
+  const parsed = Number.parseFloat(rawValue);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
 function getDropCellIndexFromPoint(point, draggedEl) {
   if (!point) {
     return null;
@@ -1347,8 +1353,9 @@ function initializeEnhancedInteractions() {
         }
       },
       move(event) {
-        const x = (Number(event.target.dataset.dragX) || 0) + event.dx;
-        const y = (Number(event.target.dataset.dragY) || 0) + event.dy;
+        const scale = getUiScale();
+        const x = (Number(event.target.dataset.dragX) || 0) + event.dx / scale;
+        const y = (Number(event.target.dataset.dragY) || 0) + event.dy / scale;
         event.target.dataset.dragX = String(x);
         event.target.dataset.dragY = String(y);
         event.target.style.transform = `translate(${x}px, ${y}px)`;
