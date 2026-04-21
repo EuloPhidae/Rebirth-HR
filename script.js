@@ -384,11 +384,14 @@ const skillEventModalEl = document.querySelector("#skillEventModal");
 const skillEventTextEl = document.querySelector("#skillEventText");
 const closeSkillEventButtonEl = document.querySelector("#closeSkillEventButton");
 
-const winAudio = new Audio("audio/win.mp3");
+const winAudio = new Audio("audio/universfield-new-notification-09-352705.mp3");
 const mergeAudio = new Audio("audio/linhmitto-bubblepop-254773.mp3");
 const recruitAudio = new Audio("audio/creatorshome-pop-cartoon-328167.mp3");
 const clickAudio = new Audio("audio/creatorshome-low-pop-368761.mp3");
 const shatterAudio = new Audio("audio/freesound_community-086454_20131120_trash-can_zoomh1xywav-87358.mp3");
+const goldSpawnAudio = new Audio("audio/chieuk-coin-257878.mp3");
+const goldExchangeAudio = new Audio("audio/freesound_community-coin-drop-on-concrete-103555.mp3");
+const goldMergeAudio = new Audio("audio/ribhavagrawal-coin-recieved-230517.mp3");
 
 function playClickSound() {
   clickAudio.currentTime = 0;
@@ -1064,6 +1067,8 @@ function confirmGoldExchange() {
     addLog(`${entity.level}级金币 兑换 ${exchangeFunds} 点公司资金。`);
   }
   closeGoldExchangeModal();
+  goldExchangeAudio.currentTime = 0;
+  goldExchangeAudio.play().catch(() => {});
   if (goldRect) {
     animateGoldExchangeToFunds(goldRect, exchangeFunds);
   }
@@ -2510,7 +2515,7 @@ function maybeShowMergeHints() {
   }
 
   const idleFor = Date.now() - state.lastInteractionAt;
-  if (idleFor < 1000) {
+  if (idleFor < 3000) {
     return;
   }
 
@@ -2600,11 +2605,19 @@ function mergeEntities(fromIndex, toIndex) {
     addLog(`合成成功，获得 ${getTalentDisplayName(nextLevel, source.role)}${attrText}${goldSpawned ? "，并意外发现金币！" : "。"}`);
   }
 
-  playMergeSound();
+  if (source.type === "gold") {
+    goldMergeAudio.currentTime = 0;
+    goldMergeAudio.play().catch(() => {});
+    addLog(`金币合成成功，获得 Lv.${nextLevel} 金币。`);
+  } else {
+    playMergeSound();
+  }
   state.selectedCell = toIndex;
   render();
   animateCell(toIndex);
   if (goldSpawned) {
+    goldSpawnAudio.currentTime = 0;
+    goldSpawnAudio.play().catch(() => {});
     const sourceRect = boardEl.querySelector(`[data-index="${toIndex}"] .talent-card`)?.getBoundingClientRect() ?? null;
     animateGoldSpawnFromMerge(sourceRect, goldSpawnIndex, state.grid[goldSpawnIndex]);
   }
