@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>职场生存战</title>
+  <title>AITROIT:BECOME SKILL</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -37,7 +37,7 @@
         <section class="board-section panel">
           <div class="panel-title-row">
             <h2>办公棋盘</h2>
-            <p class="hint">点击人才库可直接招募，再次点击同一个人才库也会继续招募；同类同级资产可合成。</p>
+            <p id="boardHint" class="hint"></p>
           </div>
           <div id="board" class="board" aria-label="人才棋盘"></div>
         </section>
@@ -205,8 +205,8 @@
   <div id="bossCarModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal panel tutorial-complete-modal">
       <p class="eyebrow">Maybach</p>
-      <h2>测试</h2>
-      <p class="task-text">🦹‍♂️高层管理：现在我们要对你进行核心员工的培训了，我们将继续扩大你的权限。</p>
+      <h2>加密弹窗</h2>
+      <p class="task-text">🦹‍♂️高层管理：已经完成了非常重要的任务，请查看任务单！</p>
       <button id="closeBossCarButton" class="primary-button">收到任务！</button>
     </div>
   </div>
@@ -260,15 +260,6 @@
     </div>
   </div>
 
-  <div id="obedience2Modal" class="modal-backdrop hidden" aria-hidden="true">
-    <div class="modal panel tutorial-complete-modal">
-      <p class="eyebrow">Obedience Training</p>
-      <h2>💃 老板的新需求</h2>
-      <p class="task-text">🦹‍♂️高层管理：老板对迈巴赫很满意！\n不过他又有了新的需求...\n他想要一个嫩模。\n打开嫩模商店，召唤一个给老板吧！</p>
-      <button id="closeObedience2Button" class="primary-button">遵命！</button>
-    </div>
-  </div>
-
   <div id="obedience3Modal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal panel tutorial-complete-modal">
       <p class="eyebrow">Obedience Training</p>
@@ -281,9 +272,46 @@
   <div id="obedienceCompleteModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal panel tutorial-complete-modal">
       <p class="eyebrow">Obedience Complete</p>
-      <h2>🎉 服从训练完成</h2>
-      <p class="task-text">你通过了所有考验。\n财务部和设计部权限已开放，棋盘全部解锁。\n继续努力为公司创造价值吧！</p>
-      <button id="closeObedienceCompleteButton" class="primary-button">继续工作</button>
+      <h2>🎉 加密弹窗</h2>
+      <p class="task-text">🦹‍♂️高层管理：已你已经完成全部技能培训，现在你是个合格的员工。老板的需求你的懂得，我觉得你应该懂你接下来要做什么了。</p>
+      <button id="closeObedienceCompleteButton" class="primary-button">开始自由任务</button>
+    </div>
+  </div>
+
+  <div id="mysteryModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel mystery-modal">
+      <div class="panel-title-row">
+        <h2>📢 加密信息</h2>
+      </div>
+      <p id="mysteryText" class="mystery-text"></p>
+      <div class="mystery-choices">
+        <button id="mysteryJoinButton" class="primary-button mystery-button">加入</button>
+        <button id="mysteryRejectButton" class="secondary-button mystery-button">不加入</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mysteryResultModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel mystery-modal">
+      <div class="panel-title-row">
+        <h2 id="mysteryResultTitle"></h2>
+      </div>
+      <p id="mysteryResultText" class="mystery-text"></p>
+      <div class="mystery-choices">
+        <button id="mysteryResultCloseButton" class="primary-button">继续</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="skillEventModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel mystery-modal">
+      <div class="panel-title-row">
+        <h2>🤖 加密弹窗</h2>
+      </div>
+      <p id="skillEventText" class="mystery-text"></p>
+      <div class="mystery-choices">
+        <button id="closeSkillEventButton" class="primary-button">收到</button>
+      </div>
     </div>
   </div>
 

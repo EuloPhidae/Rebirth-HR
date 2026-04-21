@@ -683,8 +683,8 @@ h2 {
     filter: brightness(1);
   }
   50% {
-    transform: scale(1.03);
-    filter: brightness(1.1);
+    transform: scale(1.08);
+    filter: brightness(1.25);
   }
 }
 
@@ -868,11 +868,11 @@ body.is-dragging-card .board-section {
 .role-admin-pool-4 { background: linear-gradient(180deg, #2d962d, #107a10); }
 .role-admin-pool-5 { background: linear-gradient(180deg, #108810, #006b00); }
 
-.role-finance-1 { background: linear-gradient(180deg, #f0c060, #d4a030); }
-.role-finance-2 { background: linear-gradient(180deg, #e0b040, #c09020); }
-.role-finance-3 { background: linear-gradient(180deg, #d0a020, #b08010); }
-.role-finance-4 { background: linear-gradient(180deg, #c09010, #a07000); }
-.role-finance-5 { background: linear-gradient(180deg, #b08000, #906000); }
+.role-finance-1 { background: linear-gradient(180deg, #ffb3c1, #ff8fa3); }
+.role-finance-2 { background: linear-gradient(180deg, #ff85a2, #ff5c7c); }
+.role-finance-3 { background: linear-gradient(180deg, #ff6b8a, #ff4770); }
+.role-finance-4 { background: linear-gradient(180deg, #ff4770, #e61a50); }
+.role-finance-5 { background: linear-gradient(180deg, #e61a50, #cc0033); }
 
 .role-design-1 { background: linear-gradient(180deg, #d88be0, #b868c8); }
 .role-design-2 { background: linear-gradient(180deg, #c870d8, #a850b8); }
@@ -880,11 +880,11 @@ body.is-dragging-card .board-section {
 .role-design-4 { background: linear-gradient(180deg, #a040b0, #802090); }
 .role-design-5 { background: linear-gradient(180deg, #9028a0, #701080); }
 
-.role-finance-pool-1 { background: linear-gradient(180deg, #f0c060, #d4a030); }
-.role-finance-pool-2 { background: linear-gradient(180deg, #e0b040, #c09020); }
-.role-finance-pool-3 { background: linear-gradient(180deg, #d0a020, #b08010); }
-.role-finance-pool-4 { background: linear-gradient(180deg, #c09010, #a07000); }
-.role-finance-pool-5 { background: linear-gradient(180deg, #b08000, #906000); }
+.role-finance-pool-1 { background: linear-gradient(180deg, #ffb3c1, #ff8fa3); }
+.role-finance-pool-2 { background: linear-gradient(180deg, #ff85a2, #ff5c7c); }
+.role-finance-pool-3 { background: linear-gradient(180deg, #ff6b8a, #ff4770); }
+.role-finance-pool-4 { background: linear-gradient(180deg, #ff4770, #e61a50); }
+.role-finance-pool-5 { background: linear-gradient(180deg, #e61a50, #cc0033); }
 
 .role-design-pool-1 { background: linear-gradient(180deg, #d88be0, #b868c8); }
 .role-design-pool-2 { background: linear-gradient(180deg, #c870d8, #a850b8); }
@@ -1141,6 +1141,10 @@ body.is-dragging-card .board-section {
   filter: saturate(1.05);
 }
 
+.shatter-particle {
+  z-index: 2000 !important;
+}
+
 .tutorial-complete-modal {
   max-width: 520px;
   padding: 32px;
@@ -1164,6 +1168,45 @@ body.is-dragging-card .board-section {
 .tutorial-complete-modal .primary-button {
   padding: 16px 24px;
   font-size: 16px;
+}
+
+.mystery-modal {
+  max-width: 480px;
+  padding: 28px;
+  text-align: center;
+}
+
+.mystery-modal h2 {
+  font-size: 22px;
+  margin: 12px 0;
+  color: #ff6b6b;
+}
+
+.mystery-text {
+  font-size: 15px;
+  line-height: 1.8;
+  margin: 16px 0 24px;
+  color: #c8d6e5;
+}
+
+.mystery-choices {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.mystery-button {
+  flex: 1;
+  padding: 14px 20px;
+  font-size: 15px;
+}
+
+.mystery-result-success h2 {
+  color: #4cd137;
+}
+
+.mystery-result-fail h2 {
+  color: #ff4757;
 }
 
 @media (max-width: 1160px) {
