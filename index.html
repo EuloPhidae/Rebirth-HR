@@ -196,8 +196,8 @@
   <div id="fundTargetModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal panel tutorial-complete-modal">
       <p class="eyebrow">Final Goal</p>
-      <h2>加密弹窗</h2>
-      <p class="task-text">🦹‍♂️高层管理：你已经熟练掌握公司的业务，获得了高层的信任。发现没有！除了右侧任务单，我还可以对你进行强制弹窗派发任务了。现在你的新目标是为公司攒到20点公司资金。这些资金对我们的公司发展有着极大的作用。</p>
+      <h2>附加的任务</h2>
+      <p class="task-text">你已经熟练掌握公司的业务，获得了高层的信任。请尽快为公司积累资金。</p>
       <button id="closeFundTargetButton" class="primary-button">谢谢领导的信任</button>
     </div>
   </div>
@@ -205,9 +205,9 @@
   <div id="bossCarModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal panel tutorial-complete-modal">
       <p class="eyebrow">Maybach</p>
-      <h2>加密弹窗</h2>
-      <p class="task-text">🦹‍♂️高层管理：已经完成了非常重要的任务，请查看任务单！</p>
-      <button id="closeBossCarButton" class="primary-button">收到任务！</button>
+      <h2>私人业务培训</h2>
+      <p class="task-text">现在你需要对老板的私人需求的完成进行培训。</p>
+      <button id="closeBossCarButton" class="primary-button">收到！</button>
     </div>
   </div>
 
@@ -264,7 +264,7 @@
     <div class="modal panel tutorial-complete-modal">
       <p class="eyebrow">Obedience Training</p>
       <h2>🏢 新的权限</h2>
-      <p class="task-text">🦹‍♂️高层管理：公司对你越来越信任了！\n给你开放了财务部和设计部的员工权限！\n棋盘也全部开放了！\n从技能商店购买一个财务部人才库和一个设计部人才库吧！</p>
+      <p class="task-text">系统给你开放了财务部和设计部的员工权限！\n棋盘也全部开放了！</p>
       <button id="closeObedience3Button" class="primary-button">收到！</button>
     </div>
   </div>
@@ -272,8 +272,8 @@
   <div id="obedienceCompleteModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal panel tutorial-complete-modal">
       <p class="eyebrow">Obedience Complete</p>
-      <h2>🎉 加密弹窗</h2>
-      <p class="task-text">🦹‍♂️高层管理：已你已经完成全部技能培训，现在你是个合格的员工。老板的需求你的懂得，我觉得你应该懂你接下来要做什么了。</p>
+      <h2 style="color: #ff6b6b;">🎉 加密弹窗</h2>
+      <p class="task-text">🦹‍♂️高层管理：已你已经完成全部技能培训，现在你是条合格的狗了，哦不合格的员工。老板的需求你的懂得，我觉得你应该懂你接下来要做什么了。</p>
       <button id="closeObedienceCompleteButton" class="primary-button">开始自由任务</button>
     </div>
   </div>
@@ -300,6 +300,19 @@
       <div class="mystery-choices">
         <button id="mysteryResultCloseButton" class="primary-button">继续</button>
       </div>
+    </div>
+  </div>
+
+  <div id="protestProgressModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel mystery-modal" style="max-width: 400px;">
+      <div class="panel-title-row">
+        <h2>✊ 游行抗议中</h2>
+      </div>
+      <p class="mystery-text" style="margin-bottom: 20px;">工人们正在街上游行抗议...</p>
+      <div class="protest-progress-bar">
+        <div id="protestProgressFill" class="protest-progress-fill"></div>
+      </div>
+      <p id="protestProgressText" class="mystery-text" style="margin-top: 12px; text-align: center;">0%</p>
     </div>
   </div>
 

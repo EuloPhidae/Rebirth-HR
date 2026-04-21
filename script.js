@@ -380,6 +380,9 @@ const mysteryResultModalEl = document.querySelector("#mysteryResultModal");
 const mysteryResultTitleEl = document.querySelector("#mysteryResultTitle");
 const mysteryResultTextEl = document.querySelector("#mysteryResultText");
 const mysteryResultCloseButtonEl = document.querySelector("#mysteryResultCloseButton");
+const protestProgressModalEl = document.querySelector("#protestProgressModal");
+const protestProgressFillEl = document.querySelector("#protestProgressFill");
+const protestProgressTextEl = document.querySelector("#protestProgressText");
 const skillEventModalEl = document.querySelector("#skillEventModal");
 const skillEventTextEl = document.querySelector("#skillEventText");
 const closeSkillEventButtonEl = document.querySelector("#closeSkillEventButton");
@@ -1339,6 +1342,9 @@ function initializeEnhancedInteractions() {
         event.target.classList.add("is-dragging");
         document.body.classList.add("is-dragging-card");
         state.isDragging = true;
+        if (gsapApi) {
+          gsapApi.killTweensOf(event.target);
+        }
       },
       move(event) {
         const x = (Number(event.target.dataset.dragX) || 0) + event.dx;
@@ -1785,33 +1791,37 @@ function handleMysteryJoin() {
   mysteryModalEl.classList.add("hidden");
   mysteryModalEl.setAttribute("aria-hidden", "true");
 
-  const success = Math.random() < 0.5;
-  if (success) {
-    mysteryResultTitleEl.textContent = "🎉 反抗成功！";
-    mysteryResultTextEl.textContent = "在所有工人的共同努力下，我们成功推翻了资本家的统治！从此工人们过上了幸福的生活！";
-    mysteryResultModalEl.querySelector(".modal").classList.add("mystery-result-success");
-    mysteryResultModalEl.querySelector(".modal").classList.remove("mystery-result-fail");
-  } else {
-    mysteryResultTitleEl.textContent = "💀 反抗失败...";
-    mysteryResultTextEl.textContent = "资本家联合反动势力镇压了我们的起义...工号7923，你暴露了身份，被公司无情开除。";
-    mysteryResultModalEl.querySelector(".modal").classList.add("mystery-result-fail");
-    mysteryResultModalEl.querySelector(".modal").classList.remove("mystery-result-success");
-  }
+  protestProgressModalEl.classList.remove("hidden");
+  protestProgressModalEl.setAttribute("aria-hidden", "false");
+  protestProgressFillEl.style.width = "0%";
+  protestProgressTextEl.textContent = "0%";
 
-  mysteryResultModalEl.classList.remove("hidden");
-  mysteryResultModalEl.setAttribute("aria-hidden", "false");
+  const success = Math.random() < 0.5;
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += 2;
+    protestProgressFillEl.style.width = `${progress}%`;
+    protestProgressTextEl.textContent = `${progress}%`;
+    if (progress >= 100) {
+      clearInterval(interval);
+      setTimeout(() => {
+        protestProgressModalEl.classList.add("hidden");
+        protestProgressModalEl.setAttribute("aria-hidden", "true");
+        if (success) {
+          showGameWinModal();
+        } else {
+          showDistillEndingModal();
+        }
+      }, 300);
+    }
+  }, 60);
 }
 
 function handleMysteryReject() {
   state.mysteryEventTriggered = true;
   mysteryModalEl.classList.add("hidden");
   mysteryModalEl.setAttribute("aria-hidden", "true");
-
-  mysteryResultTitleEl.textContent = "📋 测试分支";
-  mysteryResultTextEl.textContent = "你选择了保住工作，暂时安全。但失业者联盟已经记录了你的工号...未来会发生什么，尚未可知。";
-  mysteryResultModalEl.querySelector(".modal").classList.remove("mystery-result-success", "mystery-result-fail");
-  mysteryResultModalEl.classList.remove("hidden");
-  mysteryResultModalEl.setAttribute("aria-hidden", "false");
+  addLog("你选择了保住工作，继续执行任务。");
 }
 
 function closeMysteryResultModal() {
@@ -1939,7 +1949,7 @@ function assignFreeplayTask() {
     }
   }
 
-  if (state.obedienceTrainingComplete && !state.mysteryEventTriggered && state.freeplayTaskIndex > 0 && state.freeplayTaskIndex % 5 === 0) {
+  if (state.obedienceTrainingComplete && !state.mysteryEventTriggered && state.freeplayTaskIndex > 0 && state.freeplayTaskIndex % 3 === 0) {
     const kindRatio = state.totalDistillations > 0 ? state.kindDistillChoices / state.totalDistillations : 0;
     const probability = Math.min(0.3 + kindRatio * 0.5, 0.8);
     if (Math.random() < probability) {
@@ -2284,6 +2294,8 @@ function confirmSkillWorkerExchange() {
   state.totalSkillWorkerExchanges += 1;
   state.usedSkillWorkerIndices.add(index);
   clearSelection();
+  goldExchangeAudio.currentTime = 0;
+  goldExchangeAudio.play().catch(() => {});
   addLog(`员工.Skill 完成协助，消耗 ${SKILL_WORKER_EXCHANGE_TOKEN} Token 和 1 点决策点，换取 ${exchangeFunds} 点公司资金。`);
   closeSkillWorkerModal();
   render();
@@ -2674,10 +2686,6 @@ function handleCellClick(index) {
 
 function handleBoardDrop(rawData, toIndex) {
   if (state.isGameOver || !rawData) {
-    return;
-  }
-
-  if (state.incomingCells.has(toIndex)) {
     return;
   }
 
@@ -3402,6 +3410,10 @@ function renderCarShop() {
 }
 
 function buyCar(car) {
+  if (state.parkingCars.some((c) => c.id === car.id)) {
+    addLog(`${car.name} 已购买过，无法重复购买`, "warning");
+    return;
+  }
   if (state.companyFunds < car.price) {
     addLog(`公司资金不足，无法购买 ${car.name}`, "warning");
     return;
