@@ -7,6 +7,7 @@ const STARTING_TOKENS = 0;
 const STARTING_COMPANY_FUNDS = 4;
 const SKILL_WORKER_COST = 30;
 const SKILL_WORKER_EXCHANGE_TOKEN = 6;
+const SKILL_WORKER_ROLE_CONVERT_TOKEN_RATES = [0, 10, 16, 24, 34, 46];
 const KPI_TO_ACTION_COST = 10;
 const SPECIALIZATION_UNLOCK_AFTER_TASKS = 2;
 const POOL_COOLDOWN_MS = 200;
@@ -153,7 +154,7 @@ const TUTORIAL_TASKS = [
     id: "tutorial-5",
     decisionPoints: 1,
     title: "入职培训 5",
-    description: "🦹‍♂️高层管理：公司的人员真是太臃肿了，这得花不少钱！\n你今天的任务是，任选一名员工执行一次裁员，把该员工拖动到裁员区即可。\n记住无论他们怎么求情也没用，你可是我花钱招聘来的员工。\n不想在这里上班尽管不服从安排。\n毕竟不你不干有的是人干。",
+    description: "🦹‍♂️高层管理：公司的人员真是太臃肿了，这得花不少钱！\n你今天的任务是，任选一名员工执行一次裁员，把该员工拖动到裁员区即可。\n记住无论他们怎么求情也没用，你可是我花钱招聘来的员工。\n不想在这里上班尽管不服从安排。\n毕竟你不干有的是人干。",
     rewardText: "奖励：职业技巧与你的个人成长",
     objective: { type: "distill_count", count: 1 }
   }
@@ -328,9 +329,18 @@ const fundTargetModalEl = document.querySelector("#fundTargetModal");
 const closeFundTargetButtonEl = document.querySelector("#closeFundTargetButton");
 const gameWinModalEl = document.querySelector("#gameWinModal");
 const gameWinRestartButtonEl = document.querySelector("#gameWinModal #restartGameButton");
+const endingModalEl = document.querySelector("#endingModal");
+const endingEyebrowEl = document.querySelector("#endingEyebrow");
+const endingTitleEl = document.querySelector("#endingTitle");
+const endingDescriptionEl = document.querySelector("#endingDescription");
+const endingUnlockInfoEl = document.querySelector("#endingUnlockInfo");
+const endingListEl = document.querySelector("#endingList");
+const endingRestartButtonEl = document.querySelector("#endingRestartButton");
+const endingCloseButtonEl = document.querySelector("#endingCloseButton");
 const skillWorkerModalEl = document.querySelector("#skillWorkerModal");
 const skillWorkerModalTextEl = document.querySelector("#skillWorkerModalText");
 const confirmSkillWorkerButtonEl = document.querySelector("#confirmSkillWorkerButton");
+const convertSkillWorkerButtonEl = document.querySelector("#convertSkillWorkerButton");
 const cancelSkillWorkerButtonEl = document.querySelector("#cancelSkillWorkerButton");
 const goldExchangeModalEl = document.querySelector("#goldExchangeModal");
 const goldExchangeTextEl = document.querySelector("#goldExchangeText");
@@ -566,7 +576,7 @@ restartGameButtonEl.addEventListener("click", () => {
 
 quitGameButtonEl.addEventListener("click", () => {
   playClickSound();
-  showFailureModal(true);
+  showEnding("resign");
 });
 
 startGameButtonEl.addEventListener("click", () => {
@@ -666,9 +676,25 @@ gameWinRestartButtonEl.addEventListener("click", () => {
   restartGame();
 });
 
+endingRestartButtonEl?.addEventListener("click", () => {
+  playClickSound();
+  setEndingModalVisible(false);
+  restartGame();
+});
+
+endingCloseButtonEl?.addEventListener("click", () => {
+  playClickSound();
+  setEndingModalVisible(false);
+});
+
 cancelSkillWorkerButtonEl.addEventListener("click", () => {
   playClickSound();
   closeSkillWorkerModal();
+});
+
+convertSkillWorkerButtonEl?.addEventListener("click", () => {
+  playClickSound();
+  confirmSkillWorkerRoleConvert();
 });
 
 confirmSkillWorkerButtonEl.addEventListener("click", () => {
@@ -732,7 +758,19 @@ shopModalEl.addEventListener("click", (event) => {
 });
 
 document.addEventListener("pointerdown", () => {
-  markInteraction();
+  // Do not clear merge-hint UI here: clearing on pointerdown can interfere with
+  // drag initialization (especially on touch / interact.js). We clear hints on
+  // the first pointer move (drag) instead.
+  markInteraction(false);
+}, true);
+
+document.addEventListener("pointermove", () => {
+  // Clear hints as soon as the user actually starts moving (dragging).
+  if (state.mergeHintCells.size > 0) {
+    markInteraction(true);
+  } else {
+    state.lastInteractionAt = Date.now();
+  }
 }, true);
 
 closeStoryButtonEl.addEventListener("click", () => {
@@ -811,6 +849,10 @@ function getSkillWorkerExchangeFunds(level) {
   return multipliers[level] || level;
 }
 
+function getSkillWorkerRoleConvertCost(level) {
+  return SKILL_WORKER_ROLE_CONVERT_TOKEN_RATES[level] ?? Math.max(10, level * 12);
+}
+
 function createInitialGrid() {
   const grid = Array.from({ length: BOARD_SIZE }, () => null);
   return grid;
@@ -862,12 +904,60 @@ function addLog(message, type = "info") {
   }
 }
 
-function markInteraction() {
+function markInteraction(clearHints = true) {
   state.lastInteractionAt = Date.now();
-  if (state.mergeHintCells.size > 0) {
-    state.mergeHintCells.clear();
-    renderBoard();
+  if (clearHints && state.mergeHintCells.size > 0) {
+    clearMergeHintUI();
   }
+}
+
+function clearMergeHintUI() {
+  if (state.mergeHintCells.size === 0) {
+    return;
+  }
+
+  state.mergeHintCells.forEach((index) => {
+    const cell = boardEl.querySelector(`[data-index="${index}"]`);
+    if (!cell) {
+      return;
+    }
+    cell.classList.remove("merge-hint-cell");
+    cell.querySelector(".merge-hint-card")?.classList.remove("merge-hint-card");
+  });
+
+  state.mergeHintCells.clear();
+  state.lastMergeHintChange = Date.now();
+}
+
+function applyMergeHintUI(nextHints) {
+  const nextSet = nextHints instanceof Set ? nextHints : new Set(nextHints || []);
+
+  state.mergeHintCells.forEach((index) => {
+    if (nextSet.has(index)) {
+      return;
+    }
+    const cell = boardEl.querySelector(`[data-index="${index}"]`);
+    if (!cell) {
+      return;
+    }
+    cell.classList.remove("merge-hint-cell");
+    cell.querySelector(".merge-hint-card")?.classList.remove("merge-hint-card");
+  });
+
+  nextSet.forEach((index) => {
+    if (state.mergeHintCells.has(index)) {
+      return;
+    }
+    const cell = boardEl.querySelector(`[data-index="${index}"]`);
+    if (!cell) {
+      return;
+    }
+    cell.classList.add("merge-hint-cell");
+    cell.querySelector(".talent-card")?.classList.add("merge-hint-card");
+  });
+
+  state.mergeHintCells = nextSet;
+  state.lastMergeHintChange = Date.now();
 }
 
 function setPoolCooldown(index, durationMs = POOL_COOLDOWN_MS) {
@@ -991,6 +1081,150 @@ function showGameWinModal(visible) {
   }
 }
 
+const ENDINGS = [
+  {
+    key: "resign",
+    index: 1,
+    eyebrow: "Game Over",
+    title: "结局 1：离职 / 解雇",
+    description: "你中途离职（或被解雇），无法完成任务。"
+  },
+  {
+    key: "rebel_success",
+    index: 2,
+    eyebrow: "Ending Unlocked",
+    title: "结局 2：加入反抗 · 成功",
+    description: "你选择加入反抗，并最终获得了胜利。"
+  },
+  {
+    key: "rebel_fail",
+    index: 3,
+    eyebrow: "Ending Unlocked",
+    title: "结局 3：加入反抗 · 失败",
+    description: "你选择加入反抗，但行动失败，结局不可挽回。"
+  },
+  {
+    key: "skill",
+    index: 4,
+    eyebrow: "Termination Notice",
+    title: "结局 4：被转化为 Skill",
+    description: "你被公司蒸馏成 Token，你的意识被转化为 AI 驱动的技能模块，成为下一位员工的工具。"
+  }
+];
+
+const ENDING_STORAGE_KEY = "tokenGame.endings.unlocked.v1";
+
+function loadUnlockedEndings() {
+  try {
+    const raw = window.localStorage?.getItem(ENDING_STORAGE_KEY);
+    if (!raw) {
+      return new Set();
+    }
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return new Set();
+    }
+    return new Set(parsed.filter((value) => typeof value === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveUnlockedEndings(unlockedSet) {
+  try {
+    window.localStorage?.setItem(ENDING_STORAGE_KEY, JSON.stringify([...unlockedSet]));
+  } catch {
+    // ignore
+  }
+}
+
+function getEndingMeta(key) {
+  return ENDINGS.find((ending) => ending.key === key) || ENDINGS[0];
+}
+
+function setEndingModalVisible(visible) {
+  endingModalEl.classList.toggle("hidden", !visible);
+  endingModalEl.setAttribute("aria-hidden", String(!visible));
+  if (visible) {
+    animateModalEntrance(endingModalEl);
+  }
+}
+
+function setEndingTheme(key) {
+  if (!endingModalEl) {
+    return;
+  }
+  endingModalEl.classList.remove("theme-resign", "theme-rebel-success", "theme-rebel-fail", "theme-skill");
+  if (!key) {
+    return;
+  }
+  switch (key) {
+    case "rebel_success":
+      endingModalEl.classList.add("theme-rebel-success");
+      break;
+    case "rebel_fail":
+      endingModalEl.classList.add("theme-rebel-fail");
+      break;
+    case "skill":
+      endingModalEl.classList.add("theme-skill");
+      break;
+    case "resign":
+    default:
+      endingModalEl.classList.add("theme-resign");
+      break;
+  }
+}
+
+function showEnding(key) {
+  const meta = getEndingMeta(key);
+  const unlocked = loadUnlockedEndings();
+  const wasUnlocked = unlocked.has(meta.key);
+  unlocked.add(meta.key);
+  saveUnlockedEndings(unlocked);
+
+  state.isGameOver = true;
+
+  // Hide other end-state modals to avoid double overlays.
+  showFailureModal(false);
+  showGameWinModal(false);
+
+  setEndingTheme(meta.key);
+
+  if (endingEyebrowEl) endingEyebrowEl.textContent = meta.eyebrow;
+  if (endingTitleEl) endingTitleEl.textContent = meta.title;
+  if (endingDescriptionEl) endingDescriptionEl.textContent = meta.description;
+
+  const total = ENDINGS.length;
+  const unlockedCount = unlocked.size;
+  const unlockedText = wasUnlocked
+    ? `本次触发：第 ${meta.index} 个结局（已收集 ${unlockedCount} / ${total}）`
+    : `解锁新结局：第 ${meta.index} 个（已收集 ${unlockedCount} / ${total}）`;
+  if (endingUnlockInfoEl) endingUnlockInfoEl.textContent = unlockedText;
+
+  if (endingListEl) {
+    endingListEl.innerHTML = "";
+    ENDINGS.filter((ending) => unlocked.has(ending.key)).forEach((ending) => {
+      const row = document.createElement("div");
+      row.className = `ending-item ${ending.key === meta.key ? "is-current" : ""}`;
+      const check = document.createElement("div");
+      check.className = "ending-check";
+      check.textContent = "✓";
+
+      const body = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = ending.title;
+      const desc = document.createElement("small");
+      desc.textContent = ending.description;
+      body.append(title, desc);
+      row.append(check, body);
+      endingListEl.append(row);
+    });
+  }
+
+  setEndingModalVisible(true);
+  render();
+}
+
 function openSkillWorkerModal(index) {
   const entity = state.grid[index];
   if (!entity || entity.type !== "skillWorker") {
@@ -1001,12 +1235,45 @@ function openSkillWorkerModal(index) {
   const hasEnoughDecisionPoints = state.decisionPoints >= 1;
   const tokenWarning = hasEnoughTokens ? "" : `\n⚠️ Token不足（需要${SKILL_WORKER_EXCHANGE_TOKEN}点）！`;
   const decisionPointWarning = hasEnoughDecisionPoints ? "" : "\n⚠️ 决策点不足（需要1点）！";
-  skillWorkerModalTextEl.textContent =
-    `将消耗 ${SKILL_WORKER_EXCHANGE_TOKEN} Token 和 1 决策点，换取 ${exchangeFunds} 点公司资金。` +
-    ` 当前是 Lv.${entity.level}，等级越高越划算。` +
-    tokenWarning +
-    decisionPointWarning;
+  const isUsedThisTask = state.usedSkillWorkerIndices.has(index);
+
+  const taskRole = state.currentTask?.objective?.role || "";
+  const canConvertToRole = !!taskRole;
+  const convertToPool = state.currentTask?.objective?.type === "buy_role_pool" || state.currentTask?.objective?.type === "buy_new_role_pool";
+  const convertCost = canConvertToRole ? getSkillWorkerRoleConvertCost(entity.level) : 0;
+  const hasEnoughConvertTokens = !canConvertToRole || state.tokens >= convertCost;
+
+  const lines = [
+    `【兑换资金】消耗 ${SKILL_WORKER_EXCHANGE_TOKEN} Token 和 1 决策点，换取 ${exchangeFunds} 点公司资金。`,
+    `当前是 Lv.${entity.level}，等级越高越划算。`
+  ];
+  if (canConvertToRole) {
+    lines.push(`【转化角色】消耗 ${convertCost} Token，将该员工.Skill 转化为“${taskRole}”${convertToPool ? "人才库" : "员工"}（等级保留）。`);
+    if (!hasEnoughConvertTokens) {
+      lines.push(`⚠️ Token不足（需要${convertCost}点）！`);
+    }
+  }
+  if (!hasEnoughTokens) {
+    lines.push(tokenWarning.trim());
+  }
+  if (!hasEnoughDecisionPoints) {
+    lines.push(decisionPointWarning.trim());
+  }
+  skillWorkerModalTextEl.textContent = lines.filter(Boolean).join("\n");
+
   state.pendingSkillWorkerIndex = index;
+
+  // Exchange: only once per task.
+  confirmSkillWorkerButtonEl.textContent = isUsedThisTask ? "本任务已兑换" : "兑换公司资金";
+  confirmSkillWorkerButtonEl.disabled = isUsedThisTask || !hasEnoughTokens || !hasEnoughDecisionPoints || state.isGameOver;
+
+  // Convert: available when task requires a role.
+  if (convertSkillWorkerButtonEl) {
+    convertSkillWorkerButtonEl.classList.toggle("hidden", !canConvertToRole);
+    convertSkillWorkerButtonEl.textContent = canConvertToRole ? `转化为“${taskRole}”${convertToPool ? "人才库" : "员工"}` : "转化为任务角色";
+    convertSkillWorkerButtonEl.disabled = !canConvertToRole || !hasEnoughConvertTokens || state.isGameOver;
+  }
+
   skillWorkerModalEl.classList.remove("hidden");
   skillWorkerModalEl.setAttribute("aria-hidden", "false");
   animateModalEntrance(skillWorkerModalEl);
@@ -1343,6 +1610,7 @@ function initializeEnhancedInteractions() {
   interactApi(".js-draggable").draggable({
     listeners: {
       start(event) {
+        markInteraction(true);
         event.target.dataset.dragX = "0";
         event.target.dataset.dragY = "0";
         event.target.classList.add("is-dragging");
@@ -1354,11 +1622,11 @@ function initializeEnhancedInteractions() {
       },
       move(event) {
         const scale = getUiScale();
-        const x = (Number(event.target.dataset.dragX) || 0) + event.dx / scale;
-        const y = (Number(event.target.dataset.dragY) || 0) + event.dy / scale;
-        event.target.dataset.dragX = String(x);
-        event.target.dataset.dragY = String(y);
-        event.target.style.transform = `translate(${x}px, ${y}px)`;
+  const x = (Number(event.target.dataset.dragX) || 0) + event.dx / scale;
+  const y = (Number(event.target.dataset.dragY) || 0) + event.dy / scale;
+  event.target.dataset.dragX = String(x);
+  event.target.dataset.dragY = String(y);
+  event.target.style.transform = `translate(${x}px, ${y}px)`;
       },
       end(event) {
         const target = event.target;
@@ -1814,11 +2082,7 @@ function handleMysteryJoin() {
       setTimeout(() => {
         protestProgressModalEl.classList.add("hidden");
         protestProgressModalEl.setAttribute("aria-hidden", "true");
-        if (success) {
-          showGameWinModal();
-        } else {
-          showDistillEndingModal();
-        }
+        showEnding(success ? "rebel_success" : "rebel_fail");
       }, 300);
     }
   }, 60);
@@ -1841,7 +2105,7 @@ function showSkillEventModal() {
     state.skillEventTriggered = true;
     skillEventModalEl.classList.remove("hidden");
     skillEventModalEl.setAttribute("aria-hidden", "false");
-    skillEventTextEl.textContent = "🦹‍♂️高层管理（已变成AI）：降本增效，我们公司现在需要更加高效的运营。AI浪潮来袭，希望你也能积极学习AI，提高自己的生产效率，为公司创造更多价值。";
+    skillEventTextEl.textContent = "🤖高层管理.Skill：我们公司现在需要更加高效的运营。AI浪潮来袭，希望你也能积极学习AI，提高自己的生产效率，为公司创造更多价值。";
   }
 }
 
@@ -1906,30 +2170,13 @@ function finishAutoPlay() {
   state.isAutoPlaying = false;
   addLog("自动合成完成，任务提交。", "warning");
   setTimeout(() => {
-    submitTask();
-    setTimeout(() => {
-      showDistillEndingModal();
-    }, 500);
+    showEnding("skill");
   }, 500);
 }
 
 function showDistillEndingModal() {
-  const modal = document.createElement("div");
-  modal.className = "modal-backdrop";
-  modal.setAttribute("aria-hidden", "false");
-  modal.innerHTML = `
-    <div class="modal panel" style="max-width: 480px; padding: 32px; text-align: center;">
-      <h2 style="color: #ff6b6b; margin: 16px 0;">💀 游戏结束</h2>
-      <p class="mystery-text" style="margin: 20px 0; line-height: 1.8;">
-        你被公司蒸馏成了Token。<br>
-        你的意识被转化成了AI驱动的技能模块。<br>
-        现在你也成为了Skill，为下一位员工服务。<br><br>
-        <span style="color: #888;">—— 降本增效的终极奥义</span>
-      </p>
-      <button class="primary-button" onclick="location.reload()">重新开始</button>
-    </div>
-  `;
-  document.body.appendChild(modal);
+  // Backward compatibility: route legacy ending into unified ending UI.
+  showEnding("skill");
 }
 
 function checkAutoPlayProgress() {
@@ -2236,7 +2483,7 @@ function triggerGameOver() {
   }
   state.isGameOver = true;
   addLog("神秘高层：其实，我对你最近的表现是非常失望的。当初把你放到这个能力档位，是我对你的信任！你辜负了我对你的信任，你完全不称职。", "warning");
-  showFailureModal(true);
+  showEnding("resign");
   render();
 }
 
@@ -2309,6 +2556,37 @@ function confirmSkillWorkerExchange() {
   animateCell(index);
 }
 
+function confirmSkillWorkerRoleConvert() {
+  const index = state.pendingSkillWorkerIndex;
+  const entity = index === null ? null : state.grid[index];
+  if (!entity || entity.type !== "skillWorker") {
+    closeSkillWorkerModal();
+    return;
+  }
+
+  const taskRole = state.currentTask?.objective?.role || "";
+  if (!taskRole) {
+    addLog("当前任务没有指定角色需求，无法转化。", "warning");
+    closeSkillWorkerModal();
+    return;
+  }
+
+  const cost = getSkillWorkerRoleConvertCost(entity.level);
+  if (state.tokens < cost) {
+    addLog(`Token 不足，转化为“${taskRole}”需要 ${cost} Token。`, "warning");
+    closeSkillWorkerModal();
+    return;
+  }
+
+  state.tokens -= cost;
+  state.grid[index] = createEntity("talent", entity.level, { role: taskRole });
+  clearSelection();
+  addLog(`员工.Skill 转化完成：获得 Lv.${entity.level} ${taskRole}${TALENT_META[entity.level].name}（消耗 ${cost} Token）。`);
+  closeSkillWorkerModal();
+  render();
+  animateCell(index);
+}
+
 function confirmTransferRole(role) {
   const index = state.pendingTransferIndex;
   const entity = index === null ? null : state.grid[index];
@@ -2338,6 +2616,7 @@ function confirmTransferRole(role) {
 const SHOP_ITEMS = [
   {
     id: "buy-skill-worker",
+    icon: "✅",
     name: "员工.Skill",
     costLabel: `${SKILL_WORKER_COST} Token`,
     description: "购买后放入棋盘，单击并消耗 Token 可换取公司资金。",
@@ -2356,6 +2635,7 @@ const SHOP_ITEMS = [
   },
   {
     id: "kpi-to-action",
+    icon: "📊",
     name: "KPI 换行动点",
     costLabel: `${KPI_TO_ACTION_COST} KPI`,
     description: "牺牲 10 个 KPI，换取 1 个行动点。",
@@ -2376,6 +2656,7 @@ const SHOP_ITEMS = [
 
 const SPECIALIZED_POOL_ITEMS = JOB_FUNCTIONS.map((role) => ({
   id: `buy-pool-${role}`,
+  icon: ROLE_ICONS[role] || "🏢",
   name: `${role}人才库`,
   costLabel: "1 决策点 + 1 资金",
   description: `采购一个 1 级${role}人才库，放入暂存区后可稳定产出${role}人才。`,
@@ -2398,6 +2679,7 @@ const SPECIALIZED_POOL_ITEMS = JOB_FUNCTIONS.map((role) => ({
 
 const NEW_DEPARTMENT_POOL_ITEMS = NEW_JOB_FUNCTIONS.map((role) => ({
   id: `buy-pool-${role}`,
+  icon: ROLE_ICONS[role] || "🏢",
   name: `${role}人才库`,
   costLabel: "1 决策点 + 1 资金",
   description: `采购一个 1 级${role}人才库，放入暂存区后可稳定产出${role}人才。`,
@@ -2550,9 +2832,7 @@ function maybeShowMergeHints() {
     [...nextHints].every((index) => state.mergeHintCells.has(index));
 
   if (!isSame && now - state.lastMergeHintChange >= 3000) {
-    state.mergeHintCells = nextHints;
-    state.lastMergeHintChange = now;
-    renderBoard();
+    applyMergeHintUI(nextHints);
   }
 }
 
@@ -2674,10 +2954,6 @@ function handleCellClick(index) {
   }
 
   if (entity.type === "skillWorker") {
-    if (state.usedSkillWorkerIndices.has(index)) {
-      addLog("该员工.Skill 本任务已兑换过。", "warning");
-      return;
-    }
     openSkillWorkerModal(index);
     return;
   }
@@ -3169,6 +3445,7 @@ function renderBoard() {
           state.isDragging = true;
         });
         card.addEventListener("dragstart", (event) => {
+          markInteraction(true);
           event.dataTransfer.setData("text/plain", `cell:${index}`);
           document.body.classList.add("is-dragging-card");
           state.justDropped = true;
@@ -3293,6 +3570,8 @@ function renderShop() {
       return;
     }
     const button = template.content.firstElementChild.cloneNode(true);
+    button.querySelector(".shop-icon").textContent =
+      (typeof item.icon === "function" ? item.icon() : item.icon) || "🛒";
     button.id = item.id;
     button.querySelector(".shop-title").textContent = item.name;
     button.querySelector(".shop-cost").textContent = item.costLabel;
@@ -3308,6 +3587,8 @@ function renderShop() {
   if (state.specializationUnlocked) {
     SPECIALIZED_POOL_ITEMS.forEach((item) => {
       const button = template.content.firstElementChild.cloneNode(true);
+      button.querySelector(".shop-icon").textContent =
+        (typeof item.icon === "function" ? item.icon() : item.icon) || "🛒";
       button.id = item.id;
       button.querySelector(".shop-title").textContent = item.name;
       button.querySelector(".shop-cost").textContent = item.costLabel;
@@ -3324,6 +3605,8 @@ function renderShop() {
   if (state.newDepartmentsUnlocked || (state.currentTask && state.currentTask.id === "obedience-3")) {
     NEW_DEPARTMENT_POOL_ITEMS.forEach((item) => {
       const button = template.content.firstElementChild.cloneNode(true);
+      button.querySelector(".shop-icon").textContent =
+        (typeof item.icon === "function" ? item.icon() : item.icon) || "🛒";
       button.id = item.id;
       button.querySelector(".shop-title").textContent = item.name;
       button.querySelector(".shop-cost").textContent = item.costLabel;
@@ -3382,6 +3665,10 @@ function renderParking() {
   } else {
     parkingPanelEl.classList.add("hidden");
   }
+
+  // 4S店（买车）只在“服从训练”开启后出现，避免在服从训练任务之前提前露出入口。
+  const canOpen4s = !!state.currentTask?.id?.startsWith("obedience-") || state.obedienceTrainingIndex > 0 || state.obedienceTrainingComplete;
+  open4sButtonEl.classList.toggle("hidden", !canOpen4s);
 
   parkingLotEl.innerHTML = "";
   state.parkingCars.forEach((car) => {
@@ -3515,13 +3802,16 @@ function showObedienceCompleteModal(visible) {
 
 function renderDistillPanel() {
   const distillPanel = document.querySelector("#distillPanel");
+  const sidebarTopRow = document.querySelector("#sidebarTopRow");
   const shouldShow = state.tutorialComplete || 
     (state.currentTask && state.currentTask.id === "tutorial-5");
   
   if (shouldShow) {
     distillPanel.classList.remove("hidden");
+    sidebarTopRow?.classList.remove("distill-hidden");
   } else {
     distillPanel.classList.add("hidden");
+    sidebarTopRow?.classList.add("distill-hidden");
   }
 }
 
@@ -3593,6 +3883,8 @@ function restartGame() {
   showObedience3Modal(false);
   showObedienceCompleteModal(false);
   showGameWinModal(false);
+  setEndingModalVisible(false);
+  setEndingTheme("");
   closeSkillWorkerModal();
   closeTransferModal();
   closeMysteryResultModal();

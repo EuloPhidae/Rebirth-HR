@@ -44,13 +44,25 @@
       </section>
 
       <aside class="right-column">
-        <section class="panel pool-panel" id="stashPanel">
-          <div class="panel-title-row">
-            <h2>暂存区</h2>
-            <span id="stashCountLabel">0 个</span>
-          </div>
-          <div id="stashList" class="stash-list"></div>
-        </section>
+        <div class="sidebar-top-row" id="sidebarTopRow">
+          <section class="panel pool-panel" id="stashPanel">
+            <div class="panel-title-row">
+              <h2>暂存区</h2>
+              <span id="stashCountLabel">0 个</span>
+            </div>
+            <div id="stashList" class="stash-list"></div>
+          </section>
+
+          <section class="panel distill-panel hidden" id="distillPanel">
+            <div class="panel-title-row">
+              <h2>裁员</h2>
+            </div>
+            <div class="distill-drop-zone" id="distillDropZone">
+              <span class="distill-icon">🗑️</span>
+              <span class="distill-text">拖拽员工至此</span>
+            </div>
+          </section>
+        </div>
 
         <section id="taskPanel" class="panel task-panel">
           <div class="panel-title-row">
@@ -63,16 +75,6 @@
             <span id="taskReward"></span>
           </div>
           <button id="submitTaskButton" class="primary-button">提交需求</button>
-        </section>
-
-        <section class="panel distill-panel hidden" id="distillPanel">
-          <div class="panel-title-row">
-            <h2>裁员</h2>
-          </div>
-          <div class="distill-drop-zone" id="distillDropZone">
-            <span class="distill-icon">🗑️</span>
-            <span class="distill-text">拖拽员工至此</span>
-          </div>
         </section>
 
         <section id="quitPanel" class="panel quit-panel">
@@ -117,9 +119,14 @@
 
   <template id="shopItemTemplate">
     <button class="shop-item">
-      <span class="shop-title"></span>
-      <span class="shop-cost"></span>
-      <small class="shop-desc"></small>
+      <span class="shop-icon" aria-hidden="true"></span>
+      <div class="shop-main">
+        <div class="shop-head">
+          <span class="shop-title"></span>
+          <span class="shop-cost"></span>
+        </div>
+        <small class="shop-desc"></small>
+      </div>
     </button>
   </template>
 
@@ -149,10 +156,13 @@
   </div>
 
   <div id="introModal" class="modal-backdrop" aria-hidden="false">
-    <div class="modal panel">
+    <div class="modal panel intro-panel">
       <p class="eyebrow">New Assignment</p>
-      <h2>欢迎入职</h2>
-      <p class="task-text">你是公司的“人力管理”。神秘高层不会告诉你原因，只会不断甩下需求单。你的工作很简单：在有限决策点内，组织人才、完成提交。</p>
+      <h1 class="intro-game-title">AITROIT:BECOME SKILL</h1>
+      <p class="intro-tagline">把人变成 Token，把 Token 变成产能。</p>
+      <div class="intro-divider" aria-hidden="true"></div>
+      <h2 class="intro-title">欢迎入职</h2>
+      <p class="task-text intro-text">你是公司的“人力管理”。公司神秘高层不会告诉你原因，只会不断甩下需求单。你的工作很简单：看右侧的任务单，在有限决策点内完成任务单的要求、并完成提交。</p>
       <button id="startGameButton" class="primary-button">开始游戏</button>
     </div>
   </div>
@@ -220,12 +230,25 @@
     </div>
   </div>
 
+  <div id="endingModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel ending-modal">
+      <p class="eyebrow" id="endingEyebrow">Game Over</p>
+      <h2 id="endingTitle">结局</h2>
+      <p id="endingDescription" class="task-text"></p>
+      <div class="ending-unlock" id="endingUnlockInfo"></div>
+      <div class="ending-list" id="endingList"></div>
+      <button id="endingRestartButton" class="primary-button">重新开始</button>
+      <button id="endingCloseButton" class="secondary-button">关闭</button>
+    </div>
+  </div>
+
   <div id="skillWorkerModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal panel">
       <p class="eyebrow">Skill Exchange</p>
       <h2>员工.Skill</h2>
       <p id="skillWorkerModalText" class="task-text"></p>
-      <button id="confirmSkillWorkerButton" class="primary-button">确认兑换</button>
+      <button id="confirmSkillWorkerButton" class="primary-button">兑换公司资金</button>
+      <button id="convertSkillWorkerButton" class="secondary-button hidden">转化为任务角色</button>
       <button id="cancelSkillWorkerButton" class="secondary-button">取消</button>
     </div>
   </div>
